@@ -2,7 +2,7 @@
 
 戸塚重量向け **ToughFlow** の現場用モバイル Web アプリ（Next.js App Router）。
 
-仕様書 `02_app/Doc/` の P1 機能（SC-001, SC-010, SC-020, SC-030, SC-040, SC-050）に対応した UI 実装です。
+P1 機能（SC-001, SC-010, SC-020, SC-030, SC-040, SC-050）に対応した UI 実装です。
 
 ## 技術スタック
 
@@ -39,7 +39,8 @@
 ## セットアップ
 
 ```bash
-cd 02_app/mobile
+git clone https://github.com/KANIKANIMAN1234/ToughFlow-mobile-app.git
+cd ToughFlow-mobile-app
 cp .env.example .env.local
 pnpm install   # npm でエラーが出る場合は pnpm を使用
 pnpm dev
@@ -55,7 +56,7 @@ pnpm dev
 | DB | Supabase PostgreSQL（RLS） |
 | OCR | OpenAI Vision API |
 | ファイル | Google Drive API |
-| デプロイ | Vercel（Root Directory: `02_app/mobile`） |
+| デプロイ | Vercel |
 
 環境変数は `.env.example` を参照してください。
 
@@ -76,8 +77,8 @@ src/
 ## 開発コマンド
 
 ```bash
-npm run dev        # 開発サーバー
-npm run build      # 本番ビルド
-npm run typecheck  # 型チェック
-npm run lint       # ESLint
+pnpm dev        # 開発サーバー
+pnpm build      # 本番ビルド
+pnpm typecheck  # 型チェック
+pnpm lint       # ESLint
 ```
