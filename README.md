@@ -1,0 +1,83 @@
+# ToughFlow Mobile
+
+戸塚重量向け **ToughFlow** の現場用モバイル Web アプリ（Next.js App Router）。
+
+仕様書 `02_app/Doc/` の P1 機能（SC-001, SC-010, SC-020, SC-030, SC-040, SC-050）に対応した UI 実装です。
+
+## 技術スタック
+
+- Next.js 15（App Router）
+- React 19 / TypeScript
+- Tailwind CSS（モバイルファースト、max-width 480px）
+- デモ API（localStorage + Route Handlers）
+
+## 画面一覧
+
+| パス | 画面 | 仕様 |
+|------|------|------|
+| `/login` | ログイン | SC-001（デモ: 会社コード + 名前） |
+| `/home` | ホーム | SC-010 |
+| `/expenses/new` | 立替精算登録 | SC-020（OCR デモ） |
+| `/expenses` | 立替精算一覧 | SC-021 |
+| `/daily-reports/new` | 作業日報入力（6ステップ） | SC-030 |
+| `/daily-reports` | 作業日報一覧 | SC-031 |
+| `/site-surveys/new` | 現地調査入力 | SC-040 |
+| `/site-surveys` | 現地調査一覧 | — |
+| `/projects` | 案件一覧 | SC-050 |
+
+## マスタ（seed）
+
+テナントマスタ（REQ-115）の初期値を API から返却します。
+
+- **M1** 作業種別 9種（原紙 IMG_5182）
+- **M2** 車両・重機 15種
+- **M3** 資材 7行
+- **M4** 現地調査作業種別 3種
+- **M5** 必要道具 19種
+- **M7** 経費科目
+
+## セットアップ
+
+```bash
+cd 02_app/mobile
+cp .env.example .env.local
+pnpm install   # npm でエラーが出る場合は pnpm を使用
+pnpm dev
+```
+
+ブラウザで http://localhost:3000 を開き、会社コード `TOTSUKA` でログイン。
+
+## 本番連携（今後）
+
+| 項目 | 対応 |
+|------|------|
+| 認証 | LINE Login + Supabase Auth |
+| DB | Supabase PostgreSQL（RLS） |
+| OCR | OpenAI Vision API |
+| ファイル | Google Drive API |
+| デプロイ | Vercel（Root Directory: `02_app/mobile`） |
+
+環境変数は `.env.example` を参照してください。
+
+## ディレクトリ構成
+
+```
+src/
+├── app/              # ページ・API Routes
+├── components/       # UI・ウィザード
+├── contexts/         # 認証
+└── lib/
+    ├── api/          # fetch ラッパ
+    ├── seed/         # マスタ seed
+    ├── store/        # デモ用ストア
+    └── types/        # 型定義
+```
+
+## 開発コマンド
+
+```bash
+npm run dev        # 開発サーバー
+npm run build      # 本番ビルド
+npm run typecheck  # 型チェック
+npm run lint       # ESLint
+```
