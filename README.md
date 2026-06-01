@@ -11,7 +11,7 @@ Top バーの **スマホ / iPad** トグルで UI を切り替えます（`loca
 | モード | シェル | 作業日報 | 現地調査 |
 |--------|--------|----------|----------|
 | スマホ | 480px・ドロワーメニュー | `DailyReportWizard`（現行） | `SiteSurveyWizard`（現行） |
-| iPad | Sidebar 常時表示・全幅 | `DailyReportWizardIpad` | `SiteSurveyWizardIpad` |
+| iPad | Sidebar 常時表示・全幅 | `DailyReportWizardIpad` | `SiteSurveyScrollForm`（原紙2枚・縦スクロール） |
 
 ## 技術スタック
 
