@@ -85,6 +85,14 @@ export function useDailyReportWizard() {
     });
   }, []);
 
+  /** 担当 = LINEログイン（認証）ユーザーの氏名 */
+  useEffect(() => {
+    if (!user?.name) return;
+    setContent((c) =>
+      c.reporterName === user.name ? c : { ...c, reporterName: user.name }
+    );
+  }, [user?.name]);
+
   /** 立替精算（同日・同案件）→ 高速代/ガソリン代/消耗品/経費へ自動反映 */
   useEffect(() => {
     if (!user || !projectId) return;

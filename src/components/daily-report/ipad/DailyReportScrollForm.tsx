@@ -800,13 +800,10 @@ export function DailyReportScrollForm({
                   </span>
                 </Cell>
                 <Cell className="bg-slate-50 font-medium">担当</Cell>
-                <Cell>
-                  <InlineInput
-                    value={content.reporterName ?? ""}
-                    onChange={(v) =>
-                      setContent((c) => ({ ...c, reporterName: v }))
-                    }
-                  />
+                <Cell className="bg-slate-50/80">
+                  <span className="block min-h-[1.25rem] border-b border-slate-400 px-0.5 py-0 text-xs text-slate-900">
+                    {content.reporterName ?? ""}
+                  </span>
                 </Cell>
               </tr>
             </tbody>
