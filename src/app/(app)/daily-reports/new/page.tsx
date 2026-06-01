@@ -1,7 +1,7 @@
 "use client";
 
-import { DailyReportWizard } from "@/components/daily-report/DailyReportWizard";
+import { DailyReportScreen } from "@/components/daily-report/DailyReportScreen";
 
 export default function NewDailyReportPage() {
-  return <DailyReportWizard />;
+  return <DailyReportScreen />;
 }

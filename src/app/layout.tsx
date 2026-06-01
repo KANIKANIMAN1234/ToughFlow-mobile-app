@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { DisplayModeProvider } from "@/contexts/DisplayModeContext";
 
 export const metadata: Metadata = {
   title: "ToughFlow",
@@ -27,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <DisplayModeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </DisplayModeProvider>
       </body>
     </html>
   );

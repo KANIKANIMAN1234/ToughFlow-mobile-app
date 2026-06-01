@@ -4,6 +4,15 @@
 
 P1 機能（SC-001, SC-010, SC-020, SC-030, SC-040, SC-050）に対応した UI 実装です。
 
+## 表示モード（NFR-009）
+
+Top バーの **スマホ / iPad** トグルで UI を切り替えます（`localStorage` に保存）。
+
+| モード | シェル | 作業日報 | 現地調査 |
+|--------|--------|----------|----------|
+| スマホ | 480px・ドロワーメニュー | `DailyReportWizard`（現行） | `SiteSurveyWizard`（現行） |
+| iPad | Sidebar 常時表示・全幅 | `DailyReportWizardIpad` | `SiteSurveyWizardIpad` |
+
 ## 技術スタック
 
 - Next.js 15（App Router）
@@ -65,8 +74,9 @@ pnpm dev
 ```
 src/
 ├── app/              # ページ・API Routes
-├── components/       # UI・ウィザード
-├── contexts/         # 認証
+├── components/       # UI・ウィザード（phone / iPad 版）
+├── contexts/         # 認証・表示モード
+├── hooks/            # 日報・現地調査ウィザード共通ロジック
 └── lib/
     ├── api/          # fetch ラッパ
     ├── seed/         # マスタ seed

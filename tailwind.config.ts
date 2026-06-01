@@ -21,6 +21,7 @@ const config: Config = {
       },
       maxWidth: {
         mobile: "480px",
+        tablet: "1024px",
       },
     },
   },

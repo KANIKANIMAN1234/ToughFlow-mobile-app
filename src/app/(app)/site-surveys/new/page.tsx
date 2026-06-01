@@ -1,7 +1,7 @@
 "use client";
 
-import { SiteSurveyWizard } from "@/components/site-survey/SiteSurveyWizard";
+import { SiteSurveyScreen } from "@/components/site-survey/SiteSurveyScreen";
 
 export default function NewSiteSurveyPage() {
-  return <SiteSurveyWizard />;
+  return <SiteSurveyScreen />;
 }
