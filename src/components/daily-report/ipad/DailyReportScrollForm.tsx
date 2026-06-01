@@ -117,24 +117,38 @@ export function DailyReportScrollForm({
 }: Props) {
   const start = parseIso(content.workDateStart || new Date().toISOString().slice(0, 10));
   const end = content.workDateEnd ? parseIso(content.workDateEnd) : null;
-  const machine = content.machines[0] ?? {
-    name: "",
-    maker: "",
-    model: "",
-    qty: 1,
-    unitNo: "",
-  };
 
   const heavyVehicles = masters.vehicles.filter((v) => v.sortOrder <= 7);
   const lightVehicles = masters.vehicles.filter((v) => v.sortOrder > 7);
 
-  function updateMachine(patch: Partial<typeof machine>) {
+  function updateMachineAt(
+    index: number,
+    patch: Partial<(typeof content.machines)[0]>
+  ) {
     setContent((c) => {
       const machines = [...c.machines];
-      const current = machines[0] ?? machine;
-      machines[0] = { ...current, ...patch };
+      while (machines.length <= index) {
+        machines.push({ name: "", maker: "", model: "", qty: 1, unitNo: "" });
+      }
+      machines[index] = { ...machines[index], ...patch };
       return { ...c, machines };
     });
+  }
+
+  function addMachineRow() {
+    setContent((c) => ({
+      ...c,
+      machines: [
+        ...c.machines,
+        { name: "", maker: "", model: "", qty: 1, unitNo: "" },
+      ],
+    }));
+  }
+
+  const machineRows = [...content.machines];
+  const minMachineRows = 5;
+  while (machineRows.length < minMachineRows) {
+    machineRows.push({ name: "", maker: "", model: "", qty: 1, unitNo: "" });
   }
 
   function updateStartDate(part: "year" | "month" | "day", val: number) {
@@ -398,101 +412,115 @@ export function DailyReportScrollForm({
             </tbody>
           </table>
 
-          {/* 作業内容・機械表 */}
-          <table className="mt-1 w-full border-collapse text-[10px]">
-            <thead>
-              <tr>
-                <Cell className="bg-slate-50 text-center font-medium">
-                  作業内容
-                </Cell>
-                <Cell className="bg-slate-50 text-center font-medium">
-                  機械名
-                </Cell>
-                <Cell className="bg-slate-50 text-center font-medium">
-                  メーカー
-                </Cell>
-                <Cell className="bg-slate-50 text-center font-medium">
-                  型式
-                </Cell>
-                <Cell className="w-10 bg-slate-50 text-center font-medium">
-                  台数
-                </Cell>
-                <Cell className="w-10 bg-slate-50 text-center font-medium">
-                  号機
-                </Cell>
-              </tr>
-            </thead>
-            <tbody>
-              {masters.workTypes.map((wt, i) => {
-                const selected = content.workTypeId === wt.id;
-                return (
-                  <tr key={wt.id}>
-                    <Cell className={cn(selected && "bg-brand-50")}>
-                      <label className="flex cursor-pointer items-center gap-1">
-                        <input
-                          type="radio"
-                          className="h-3 w-3 shrink-0"
-                          checked={selected}
-                          onChange={() =>
-                            setContent((c) => ({ ...c, workTypeId: wt.id }))
-                          }
-                        />
-                        <span>
-                          {circleNumber(i + 1)}
-                          {wt.name}
-                        </span>
-                      </label>
+          {/* 作業内容（左）・機械表（右）— 独立項目 */}
+          <div className="mt-1 grid grid-cols-[minmax(0,1.15fr)_minmax(0,1.85fr)] border border-slate-800">
+            <table className="w-full border-collapse border-r border-slate-800 text-[10px]">
+              <thead>
+                <tr>
+                  <Cell className="bg-slate-50 text-center font-medium">
+                    作業内容
+                  </Cell>
+                </tr>
+              </thead>
+              <tbody>
+                {masters.workTypes.map((wt, i) => {
+                  const selected = content.workTypeId === wt.id;
+                  return (
+                    <tr key={wt.id}>
+                      <Cell className={cn(selected && "bg-brand-50")}>
+                        <label className="flex cursor-pointer items-center gap-1">
+                          <input
+                            type="radio"
+                            className="h-3 w-3 shrink-0"
+                            checked={selected}
+                            onChange={() =>
+                              setContent((c) => ({ ...c, workTypeId: wt.id }))
+                            }
+                          />
+                          <span>
+                            {circleNumber(i + 1)}
+                            {wt.name}
+                          </span>
+                        </label>
+                      </Cell>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div>
+              <table className="w-full border-collapse text-[10px]">
+                <thead>
+                  <tr>
+                    <Cell className="bg-slate-50 text-center font-medium">
+                      機械名
                     </Cell>
-                    <Cell className={cn(selected && "bg-brand-50")}>
-                      {selected ? (
-                        <InlineInput
-                          value={machine.name}
-                          onChange={(v) => updateMachine({ name: v })}
-                        />
-                      ) : null}
+                    <Cell className="bg-slate-50 text-center font-medium">
+                      メーカー
                     </Cell>
-                    <Cell className={cn(selected && "bg-brand-50")}>
-                      {selected ? (
-                        <InlineInput
-                          value={machine.maker}
-                          onChange={(v) => updateMachine({ maker: v })}
-                        />
-                      ) : null}
+                    <Cell className="bg-slate-50 text-center font-medium">
+                      型式
                     </Cell>
-                    <Cell className={cn(selected && "bg-brand-50")}>
-                      {selected ? (
-                        <InlineInput
-                          value={machine.model}
-                          onChange={(v) => updateMachine({ model: v })}
-                        />
-                      ) : null}
+                    <Cell className="w-10 bg-slate-50 text-center font-medium">
+                      台数
                     </Cell>
-                    <Cell className={cn(selected && "bg-brand-50")}>
-                      {selected ? (
-                        <InlineInput
-                          type="number"
-                          value={machine.qty}
-                          onChange={(v) =>
-                            updateMachine({ qty: Number(v) || 1 })
-                          }
-                          className="text-center"
-                        />
-                      ) : null}
-                    </Cell>
-                    <Cell className={cn(selected && "bg-brand-50")}>
-                      {selected ? (
-                        <InlineInput
-                          value={machine.unitNo ?? ""}
-                          onChange={(v) => updateMachine({ unitNo: v })}
-                          className="text-center"
-                        />
-                      ) : null}
+                    <Cell className="w-10 bg-slate-50 text-center font-medium">
+                      号機
                     </Cell>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {machineRows.map((row, i) => (
+                    <tr key={i}>
+                      <Cell>
+                        <InlineInput
+                          value={row.name}
+                          onChange={(v) => updateMachineAt(i, { name: v })}
+                        />
+                      </Cell>
+                      <Cell>
+                        <InlineInput
+                          value={row.maker}
+                          onChange={(v) => updateMachineAt(i, { maker: v })}
+                        />
+                      </Cell>
+                      <Cell>
+                        <InlineInput
+                          value={row.model}
+                          onChange={(v) => updateMachineAt(i, { model: v })}
+                        />
+                      </Cell>
+                      <Cell>
+                        <InlineInput
+                          type="number"
+                          value={row.qty}
+                          onChange={(v) =>
+                            updateMachineAt(i, { qty: Number(v) || 1 })
+                          }
+                          className="text-center"
+                        />
+                      </Cell>
+                      <Cell>
+                        <InlineInput
+                          value={row.unitNo ?? ""}
+                          onChange={(v) => updateMachineAt(i, { unitNo: v })}
+                          className="text-center"
+                        />
+                      </Cell>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button
+                type="button"
+                onClick={addMachineRow}
+                className="w-full border-t border-slate-800 py-0.5 text-[9px] text-slate-600 hover:bg-slate-50"
+              >
+                ＋ 行追加
+              </button>
+            </div>
+          </div>
 
           {/* 車両・重機（上段） */}
           <div className="mt-1">
