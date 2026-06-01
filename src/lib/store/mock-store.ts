@@ -93,10 +93,23 @@ export function addExpense(expense: Expense) {
   return expense;
 }
 
-export function listExpenses(userId?: string) {
+export function listExpenses(filters?: {
+  userId?: string;
+  projectId?: string;
+  expenseDate?: string;
+}) {
   const store = loadStore();
-  if (!userId) return store.expenses;
-  return store.expenses.filter((e) => e.userId === userId);
+  let list = store.expenses;
+  if (filters?.userId) {
+    list = list.filter((e) => e.userId === filters.userId);
+  }
+  if (filters?.projectId) {
+    list = list.filter((e) => e.projectId === filters.projectId);
+  }
+  if (filters?.expenseDate) {
+    list = list.filter((e) => e.expenseDate === filters.expenseDate);
+  }
+  return list;
 }
 
 export function addSiteSurvey(survey: SiteSurvey) {

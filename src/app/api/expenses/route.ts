@@ -7,8 +7,13 @@ import {
 import type { Expense } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get("userId") ?? undefined;
-  return NextResponse.json({ expenses: listExpenses(userId) });
+  const { searchParams } = request.nextUrl;
+  const userId = searchParams.get("userId") ?? undefined;
+  const projectId = searchParams.get("projectId") ?? undefined;
+  const expenseDate = searchParams.get("expenseDate") ?? undefined;
+  return NextResponse.json({
+    expenses: listExpenses({ userId, projectId, expenseDate }),
+  });
 }
 
 export async function POST(request: NextRequest) {

@@ -7,12 +7,17 @@ import { api } from "@/lib/api/client";
 import type {
   DailyReportContent,
   DailyReportMasters,
+  Expense,
   MachineRow,
   MaterialValue,
   Project,
   VehicleSelection,
 } from "@/lib/types";
 import { calcDailyReportTotalCosts } from "@/lib/daily-report/costs";
+import {
+  aggregateExpensesToCosts,
+  mergeReimbursementIntoCosts,
+} from "@/lib/daily-report/expense-sync";
 import { todayISO } from "@/lib/utils";
 
 export const DAILY_REPORT_STEPS = [
@@ -79,6 +84,37 @@ export function useDailyReportWizard() {
       }
     });
   }, []);
+
+  /** 立替精算（同日・同案件）→ 高速代/ガソリン代/消耗品/経費へ自動反映 */
+  useEffect(() => {
+    if (!user || !projectId) return;
+
+    const workDate = content.workDateStart;
+    let cancelled = false;
+
+    api
+      .get<{ expenses: Expense[] }>(
+        `/api/expenses?userId=${encodeURIComponent(user.id)}&projectId=${encodeURIComponent(projectId)}&expenseDate=${encodeURIComponent(workDate)}`
+      )
+      .then(({ expenses }) => {
+        if (cancelled) return;
+        const reimbursement = aggregateExpensesToCosts(expenses);
+        setContent((c) => {
+          if (c.workDateStart !== workDate) return c;
+          return {
+            ...c,
+            costs: mergeReimbursementIntoCosts(c.costs, reimbursement),
+          };
+        });
+      })
+      .catch(() => {
+        /* デモ環境：取得失敗時は手入力のまま */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, projectId, content.workDateStart]);
 
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === projectId),

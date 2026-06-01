@@ -710,7 +710,10 @@ export function DailyReportScrollForm({
           </table>
 
           {/* 経費表 */}
-          <table className="mt-1 w-full border-collapse text-[10px]">
+          <p className="mt-1 text-[10px] text-slate-500">
+            高速代・ガソリン代・消耗品・経費（駐車場/その他）は、立替精算（同案件・作業日）から自動反映されます。
+          </p>
+          <table className="mt-0.5 w-full border-collapse text-[10px]">
             <tbody>
               <tr>
                 <Cell className="w-1/4 bg-slate-50">人件費</Cell>
