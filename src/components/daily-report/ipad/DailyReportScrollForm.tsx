@@ -448,30 +448,30 @@ export function DailyReportScrollForm({
               </thead>
               <tbody>
                 {machineRows.map((row, i) => (
-                  <tr key={i} className="h-7">
+                  <tr key={i} className="h-8">
                     {i === 0 && (
                       <Cell
                         rowSpan={machineRows.length}
-                        className="p-0.5 align-top"
+                        className="p-1 align-top"
                       >
-                        <div className="flex h-full flex-col justify-between gap-px">
+                        <div className="flex h-full flex-col justify-between gap-0.5">
                           {masters.workTypes.map((wt, wi) => {
                             const selected = content.workTypeIds.includes(wt.id);
                             return (
                               <label
                                 key={wt.id}
                                 className={cn(
-                                  "flex cursor-pointer items-start gap-0.5 leading-[1.1] text-[8px]",
+                                  "flex cursor-pointer items-center gap-1 leading-tight",
                                   selected && "rounded-sm bg-brand-50"
                                 )}
                               >
                                 <input
                                   type="checkbox"
-                                  className="mt-px h-2.5 w-2.5 shrink-0"
+                                  className="h-3 w-3 shrink-0"
                                   checked={selected}
                                   onChange={() => toggleWorkType(wt.id)}
                                 />
-                                <span className="break-all">
+                                <span>
                                   {circleNumber(wi + 1)}
                                   {wt.name}
                                 </span>
