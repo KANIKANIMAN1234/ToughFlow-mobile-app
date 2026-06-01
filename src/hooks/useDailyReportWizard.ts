@@ -12,6 +12,7 @@ import type {
   Project,
   VehicleSelection,
 } from "@/lib/types";
+import { calcDailyReportTotalCosts } from "@/lib/daily-report/costs";
 import { todayISO } from "@/lib/utils";
 
 export const DAILY_REPORT_STEPS = [
@@ -160,7 +161,14 @@ export function useDailyReportWizard() {
         projectName: selectedProject.name,
         userId: user.id,
         userName: user.name,
-        content: { ...content, reporterName: user.name },
+        content: {
+          ...content,
+          reporterName: user.name,
+          costs: {
+            ...content.costs,
+            total: calcDailyReportTotalCosts(content.costs),
+          },
+        },
         status: "submitted",
       });
       router.push("/daily-reports");

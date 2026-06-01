@@ -7,6 +7,10 @@ import type {
   Project,
   VehicleSelection,
 } from "@/lib/types";
+import {
+  calcDailyReportTotalCosts,
+  type DailyReportCostInputKey,
+} from "@/lib/daily-report/costs";
 import { circleNumber, cn } from "@/lib/utils";
 import {
   Cell,
@@ -151,13 +155,21 @@ export function DailyReportScrollForm({
     }));
   }
 
-  function updateCost(key: keyof DailyReportContent["costs"], val: string) {
+  function updateCost(key: DailyReportCostInputKey, val: string) {
     const num = val === "" ? null : Number(val);
-    setContent((c) => ({
-      ...c,
-      costs: { ...c.costs, [key]: num },
-    }));
+    setContent((c) => {
+      const nextCosts = { ...c.costs, [key]: num };
+      return {
+        ...c,
+        costs: {
+          ...nextCosts,
+          total: calcDailyReportTotalCosts(nextCosts),
+        },
+      };
+    });
   }
+
+  const totalCosts = calcDailyReportTotalCosts(content.costs);
 
   return (
     <div className="mx-auto w-full max-w-[794px] space-y-6">
@@ -774,12 +786,15 @@ export function DailyReportScrollForm({
               </tr>
               <tr>
                 <Cell className="bg-slate-50 font-medium">総経費</Cell>
-                <Cell>
-                  <InlineInput
-                    type="number"
-                    value={content.costs.total ?? ""}
-                    onChange={(v) => updateCost("total", v)}
-                  />
+                <Cell className="bg-slate-50/80">
+                  <span
+                    className="block min-h-[1.25rem] border-b border-slate-400 px-0.5 py-0 text-xs text-slate-900"
+                    aria-live="polite"
+                  >
+                    {totalCosts != null
+                      ? totalCosts.toLocaleString("ja-JP")
+                      : ""}
+                  </span>
                 </Cell>
                 <Cell className="bg-slate-50 font-medium">担当</Cell>
                 <Cell>
