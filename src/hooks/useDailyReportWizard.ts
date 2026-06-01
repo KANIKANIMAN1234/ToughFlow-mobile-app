@@ -47,7 +47,7 @@ export function useDailyReportWizard() {
     workDateStart: todayISO(),
     pickup: {},
     delivery: { address: "", company: "" },
-    workTypeId: "",
+    workTypeIds: [],
     machines: [emptyMachine()],
     vehicles: [],
     materials: [],
@@ -79,7 +79,6 @@ export function useDailyReportWizard() {
             address: proj.deliveryAddress,
             company: proj.deliveryCompany,
           },
-          workTypeId: m.workTypes[0]?.id ?? "",
         }));
       }
     });

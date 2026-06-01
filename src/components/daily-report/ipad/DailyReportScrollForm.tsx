@@ -145,6 +145,15 @@ export function DailyReportScrollForm({
     }));
   }
 
+  function toggleWorkType(workTypeId: string) {
+    setContent((c) => ({
+      ...c,
+      workTypeIds: c.workTypeIds.includes(workTypeId)
+        ? c.workTypeIds.filter((id) => id !== workTypeId)
+        : [...c.workTypeIds, workTypeId],
+    }));
+  }
+
   const machineRows = [...content.machines];
   const minMachineRows = 5;
   while (machineRows.length < minMachineRows) {
@@ -412,110 +421,111 @@ export function DailyReportScrollForm({
             </tbody>
           </table>
 
-          {/* 作業内容（左）・機械表（右）— 独立項目 */}
-          <div className="mt-1 grid grid-cols-[minmax(0,1.15fr)_minmax(0,1.85fr)] border border-slate-800">
-            <table className="w-full border-collapse border-r border-slate-800 text-[10px]">
+          {/* 作業内容（左）・機械表（右）— 独立項目。作業内容は機械5行分の高さに収める */}
+          <div className="mt-1 border border-slate-800">
+            <table className="w-full border-collapse text-[10px]">
               <thead>
                 <tr>
-                  <Cell className="bg-slate-50 text-center font-medium">
+                  <Cell className="w-[26%] bg-slate-50 text-center font-medium">
                     作業内容
+                  </Cell>
+                  <Cell className="bg-slate-50 text-center font-medium">
+                    機械名
+                  </Cell>
+                  <Cell className="bg-slate-50 text-center font-medium">
+                    メーカー
+                  </Cell>
+                  <Cell className="bg-slate-50 text-center font-medium">
+                    型式
+                  </Cell>
+                  <Cell className="w-10 bg-slate-50 text-center font-medium">
+                    台数
+                  </Cell>
+                  <Cell className="w-10 bg-slate-50 text-center font-medium">
+                    号機
                   </Cell>
                 </tr>
               </thead>
               <tbody>
-                {masters.workTypes.map((wt, i) => {
-                  const selected = content.workTypeId === wt.id;
-                  return (
-                    <tr key={wt.id}>
-                      <Cell className={cn(selected && "bg-brand-50")}>
-                        <label className="flex cursor-pointer items-center gap-1">
-                          <input
-                            type="radio"
-                            className="h-3 w-3 shrink-0"
-                            checked={selected}
-                            onChange={() =>
-                              setContent((c) => ({ ...c, workTypeId: wt.id }))
-                            }
-                          />
-                          <span>
-                            {circleNumber(i + 1)}
-                            {wt.name}
-                          </span>
-                        </label>
+                {machineRows.map((row, i) => (
+                  <tr key={i} className="h-7">
+                    {i === 0 && (
+                      <Cell
+                        rowSpan={machineRows.length}
+                        className="p-0.5 align-top"
+                      >
+                        <div className="flex h-full flex-col justify-between gap-px">
+                          {masters.workTypes.map((wt, wi) => {
+                            const selected = content.workTypeIds.includes(wt.id);
+                            return (
+                              <label
+                                key={wt.id}
+                                className={cn(
+                                  "flex cursor-pointer items-start gap-0.5 leading-[1.1] text-[8px]",
+                                  selected && "rounded-sm bg-brand-50"
+                                )}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="mt-px h-2.5 w-2.5 shrink-0"
+                                  checked={selected}
+                                  onChange={() => toggleWorkType(wt.id)}
+                                />
+                                <span className="break-all">
+                                  {circleNumber(wi + 1)}
+                                  {wt.name}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
                       </Cell>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            <div>
-              <table className="w-full border-collapse text-[10px]">
-                <thead>
-                  <tr>
-                    <Cell className="bg-slate-50 text-center font-medium">
-                      機械名
+                    )}
+                    <Cell className="p-0.5">
+                      <InlineInput
+                        value={row.name}
+                        onChange={(v) => updateMachineAt(i, { name: v })}
+                      />
                     </Cell>
-                    <Cell className="bg-slate-50 text-center font-medium">
-                      メーカー
+                    <Cell className="p-0.5">
+                      <InlineInput
+                        value={row.maker}
+                        onChange={(v) => updateMachineAt(i, { maker: v })}
+                      />
                     </Cell>
-                    <Cell className="bg-slate-50 text-center font-medium">
-                      型式
+                    <Cell className="p-0.5">
+                      <InlineInput
+                        value={row.model}
+                        onChange={(v) => updateMachineAt(i, { model: v })}
+                      />
                     </Cell>
-                    <Cell className="w-10 bg-slate-50 text-center font-medium">
-                      台数
+                    <Cell className="p-0.5">
+                      <InlineInput
+                        type="number"
+                        value={row.qty}
+                        onChange={(v) =>
+                          updateMachineAt(i, { qty: Number(v) || 1 })
+                        }
+                        className="text-center"
+                      />
                     </Cell>
-                    <Cell className="w-10 bg-slate-50 text-center font-medium">
-                      号機
+                    <Cell className="p-0.5">
+                      <InlineInput
+                        value={row.unitNo ?? ""}
+                        onChange={(v) => updateMachineAt(i, { unitNo: v })}
+                        className="text-center"
+                      />
                     </Cell>
                   </tr>
-                </thead>
-                <tbody>
-                  {machineRows.map((row, i) => (
-                    <tr key={i}>
-                      <Cell>
-                        <InlineInput
-                          value={row.name}
-                          onChange={(v) => updateMachineAt(i, { name: v })}
-                        />
-                      </Cell>
-                      <Cell>
-                        <InlineInput
-                          value={row.maker}
-                          onChange={(v) => updateMachineAt(i, { maker: v })}
-                        />
-                      </Cell>
-                      <Cell>
-                        <InlineInput
-                          value={row.model}
-                          onChange={(v) => updateMachineAt(i, { model: v })}
-                        />
-                      </Cell>
-                      <Cell>
-                        <InlineInput
-                          type="number"
-                          value={row.qty}
-                          onChange={(v) =>
-                            updateMachineAt(i, { qty: Number(v) || 1 })
-                          }
-                          className="text-center"
-                        />
-                      </Cell>
-                      <Cell>
-                        <InlineInput
-                          value={row.unitNo ?? ""}
-                          onChange={(v) => updateMachineAt(i, { unitNo: v })}
-                          className="text-center"
-                        />
-                      </Cell>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                ))}
+              </tbody>
+            </table>
+            <div className="grid grid-cols-[26%_1fr] border-t border-slate-800">
+              <div className="border-r border-slate-800" />
               <button
                 type="button"
                 onClick={addMachineRow}
-                className="w-full border-t border-slate-800 py-0.5 text-[9px] text-slate-600 hover:bg-slate-50"
+                className="py-0.5 text-[9px] text-slate-600 hover:bg-slate-50"
               >
                 ＋ 行追加
               </button>

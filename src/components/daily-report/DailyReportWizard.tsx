@@ -134,17 +134,21 @@ export function DailyReportWizard() {
                 key={wt.id}
                 className={cn(
                   "flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm",
-                  content.workTypeId === wt.id
+                  content.workTypeIds.includes(wt.id)
                     ? "border-brand-500 bg-brand-50"
                     : "border-surface-border"
                 )}
               >
                 <input
-                  type="radio"
-                  name="workType"
-                  checked={content.workTypeId === wt.id}
+                  type="checkbox"
+                  checked={content.workTypeIds.includes(wt.id)}
                   onChange={() =>
-                    setContent((c) => ({ ...c, workTypeId: wt.id }))
+                    setContent((c) => ({
+                      ...c,
+                      workTypeIds: c.workTypeIds.includes(wt.id)
+                        ? c.workTypeIds.filter((id) => id !== wt.id)
+                        : [...c.workTypeIds, wt.id],
+                    }))
                   }
                 />
                 <span>
