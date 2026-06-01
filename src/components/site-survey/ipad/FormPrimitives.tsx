@@ -64,21 +64,30 @@ export function InlineInput({
   type = "text",
   className,
   placeholder,
+  compact,
+  inputMode,
 }: {
   value: string | number | undefined;
   onChange: (v: string) => void;
   type?: string;
   className?: string;
   placeholder?: string;
+  /** 表内の短い数値など。w-full を使わず横並び可能にする */
+  compact?: boolean;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
 }) {
   return (
     <input
       type={type}
+      inputMode={inputMode}
       value={value ?? ""}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       className={cn(
-        "w-full min-w-0 border-0 border-b border-slate-400 bg-transparent px-0.5 py-0 text-xs outline-none focus:border-brand-500",
+        "border-0 border-b border-slate-400 bg-transparent px-0.5 py-0 text-xs outline-none focus:border-brand-500",
+        compact
+          ? "inline-block w-8 shrink-0 text-center leading-tight"
+          : "block w-full min-w-0",
         className
       )}
     />

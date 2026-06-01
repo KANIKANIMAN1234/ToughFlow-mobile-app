@@ -49,6 +49,12 @@ function toIso(year: number, month: number, day: number) {
   return `${year}-${m}-${d}`;
 }
 
+const WEEKDAYS = "日月火水木金土";
+
+function weekdayJa(iso: string) {
+  return WEEKDAYS[new Date(`${iso}T00:00:00`).getDay()];
+}
+
 function VehicleTile({
   id,
   label,
@@ -205,50 +211,110 @@ export function DailyReportScrollForm({
 
               {/* 作業年月日 */}
               <tr>
-                <Cell className="bg-slate-50 font-medium">作業年月日</Cell>
-                <Cell colSpan={4}>
-                  <span className="inline-flex flex-wrap items-center gap-1">
-                    令和
-                    <InlineInput
-                      type="number"
-                      value={reiwaYear(content.workDateStart)}
-                      onChange={(v) =>
-                        updateStartDate("year", Number(v) + 2018)
-                      }
-                      className="w-8 text-center"
-                    />
-                    年
-                    <InlineInput
-                      type="number"
-                      value={start.month}
-                      onChange={(v) => updateStartDate("month", Number(v))}
-                      className="w-8 text-center"
-                    />
-                    月
-                    <InlineInput
-                      type="number"
-                      value={start.day}
-                      onChange={(v) => updateStartDate("day", Number(v))}
-                      className="w-8 text-center"
-                    />
-                    日（　）～
-                    <InlineInput
-                      type="number"
-                      value={end?.month ?? ""}
-                      onChange={(v) => updateEndDate("month", Number(v))}
-                      className="w-8 text-center"
-                      placeholder="月"
-                    />
-                    月
-                    <InlineInput
-                      type="number"
-                      value={end?.day ?? ""}
-                      onChange={(v) => updateEndDate("day", Number(v))}
-                      className="w-8 text-center"
-                      placeholder="日"
-                    />
-                    日（　）
-                  </span>
+                <Cell className="whitespace-nowrap bg-slate-50 font-medium">
+                  作業年月日
+                </Cell>
+                <Cell colSpan={4} className="align-middle">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="inline-flex shrink-0 items-baseline whitespace-nowrap leading-snug">
+                      令和
+                      <InlineInput
+                        compact
+                        type="number"
+                        inputMode="numeric"
+                        value={reiwaYear(content.workDateStart)}
+                        onChange={(v) => {
+                          const n = Number(v);
+                          if (!Number.isNaN(n) && v !== "") {
+                            updateStartDate("year", n + 2018);
+                          }
+                        }}
+                        className="w-7"
+                      />
+                      年
+                      <InlineInput
+                        compact
+                        type="number"
+                        inputMode="numeric"
+                        value={start.month}
+                        onChange={(v) => {
+                          const n = Number(v);
+                          if (!Number.isNaN(n) && v !== "") {
+                            updateStartDate("month", n);
+                          }
+                        }}
+                        className="w-6"
+                      />
+                      月
+                      <InlineInput
+                        compact
+                        type="number"
+                        inputMode="numeric"
+                        value={start.day}
+                        onChange={(v) => {
+                          const n = Number(v);
+                          if (!Number.isNaN(n) && v !== "") {
+                            updateStartDate("day", n);
+                          }
+                        }}
+                        className="w-6"
+                      />
+                      日（{weekdayJa(content.workDateStart)}）～
+                      <InlineInput
+                        compact
+                        type="number"
+                        inputMode="numeric"
+                        value={end?.month ?? ""}
+                        onChange={(v) => {
+                          if (v === "") {
+                            setContent((c) => ({ ...c, workDateEnd: null }));
+                            return;
+                          }
+                          const n = Number(v);
+                          if (!Number.isNaN(n)) updateEndDate("month", n);
+                        }}
+                        className="w-6"
+                        placeholder=" "
+                      />
+                      月
+                      <InlineInput
+                        compact
+                        type="number"
+                        inputMode="numeric"
+                        value={end?.day ?? ""}
+                        onChange={(v) => {
+                          if (v === "") {
+                            setContent((c) => ({ ...c, workDateEnd: null }));
+                            return;
+                          }
+                          const n = Number(v);
+                          if (!Number.isNaN(n)) updateEndDate("day", n);
+                        }}
+                        className="w-6"
+                        placeholder=" "
+                      />
+                      日（
+                      {content.workDateEnd
+                        ? weekdayJa(content.workDateEnd)
+                        : "　"}
+                      ）
+                    </span>
+                    <label className="ml-auto flex shrink-0 items-center gap-1 text-[10px] text-slate-500">
+                      <span className="hidden sm:inline">カレンダー</span>
+                      <input
+                        type="date"
+                        aria-label="作業日を選択"
+                        value={content.workDateStart}
+                        onChange={(e) =>
+                          setContent((c) => ({
+                            ...c,
+                            workDateStart: e.target.value,
+                          }))
+                        }
+                        className="h-7 rounded border border-slate-300 bg-white px-1 text-xs text-slate-800"
+                      />
+                    </label>
+                  </div>
                 </Cell>
               </tr>
 
