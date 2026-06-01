@@ -7,6 +7,7 @@ import {
   PaperPage,
   YesNo,
 } from "./FormPrimitives";
+import { SiteSurveyPhotoEntries } from "@/components/site-survey/SiteSurveyPhotoEntries";
 
 type Props = {
   projects: Project[];
@@ -642,26 +643,11 @@ export function SiteSurveyScrollForm({
             <p className="mb-2 text-center text-sm font-medium">
               現場調査写真（PDF 3ページ目）
             </p>
-            <label className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center border-2 border-dashed border-slate-400 bg-slate-50">
-              <span className="text-sm text-slate-600">📷 カメラで撮影</span>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(e) =>
-                  setPhoto(setContent, "sitePhoto", e.target.files?.[0])
-                }
-              />
-            </label>
-            {content.photos.sitePhoto && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={content.photos.sitePhoto}
-                alt="現場"
-                className="mt-2 max-h-48 w-full object-contain"
-              />
-            )}
+            <SiteSurveyPhotoEntries
+              content={content}
+              setContent={setContent}
+              variant="paper"
+            />
           </div>
         </div>
       </PaperPage>

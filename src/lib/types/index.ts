@@ -136,6 +136,11 @@ export interface SiteSurveyToolCheck {
   use: boolean;
 }
 
+export interface SiteSurveyPhotoEntry {
+  url: string;
+  caption: string;
+}
+
 export interface SiteSurveyContent {
   customerName: string;
   hasEstimate: boolean;
@@ -174,7 +179,10 @@ export interface SiteSurveyContent {
   photos: {
     mapCarryIn?: string;
     siteLayout?: string;
+    /** PDF 3ページ目の代表写真（entries の先頭 URL と同期） */
     sitePhoto?: string;
+    /** 現場調査写真：左=画像、右=説明 を縦に並べる */
+    sitePhotoEntries?: SiteSurveyPhotoEntry[];
   };
 }
 

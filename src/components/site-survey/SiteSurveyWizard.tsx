@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { Textarea } from "@/components/ui/Textarea";
 import { useSiteSurveyWizard } from "@/hooks/useSiteSurveyWizard";
+import { SiteSurveyPhotoEntries } from "@/components/site-survey/SiteSurveyPhotoEntries";
 import { cn } from "@/lib/utils";
 
 const STEPS = ["基本", "搬入", "作業", "道具", "写真"];
@@ -265,32 +266,11 @@ export function SiteSurveyWizard() {
 
       {step === 5 && (
         <Card title="現場調査写真">
-          <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-8">
-            <span className="text-sm text-slate-600">現場写真 1枚</span>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                const url = URL.createObjectURL(file);
-                setContent((c) => ({
-                  ...c,
-                  photos: { ...c.photos, sitePhoto: url },
-                }));
-              }}
-            />
-          </label>
-          {content.photos.sitePhoto && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={content.photos.sitePhoto}
-              alt="現場"
-              className="mt-3 max-h-48 w-full rounded-xl object-cover"
-            />
-          )}
+          <SiteSurveyPhotoEntries
+            content={content}
+            setContent={setContent}
+            variant="card"
+          />
         </Card>
       )}
 

@@ -38,7 +38,9 @@ export function useSiteSurveyWizard() {
     workSteps: [""],
     precautions: [""],
     tools: [],
-    photos: {},
+    photos: {
+      sitePhotoEntries: [{ url: "", caption: "" }],
+    },
   }));
 
   useEffect(() => {
