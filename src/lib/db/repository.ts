@@ -1,0 +1,530 @@
+import { createAdminClient } from "@/lib/supabase/admin";
+import type {
+  DailyReport,
+  DailyReportContent,
+  DailyReportMaterial,
+  DailyReportMasters,
+  DailyReportVehicle,
+  DailyReportWorkType,
+  Expense,
+  ExpenseCategory,
+  Project,
+  SiteSurvey,
+  SiteSurveyContent,
+  SiteSurveyMasters,
+  SiteSurveyTool,
+  SiteSurveyWorkType,
+  User,
+  UserRole,
+} from "@/lib/types";
+
+type DbCustomer = { name: string; address: string | null } | null;
+
+type DbProjectRow = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  status: string;
+  m_customer: DbCustomer | DbCustomer[];
+};
+
+function unwrapJoin<T>(value: T | T[] | null): T | null {
+  if (value == null) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+function mapProject(row: DbProjectRow): Project {
+  const customer = unwrapJoin(row.m_customer);
+  const customerName = customer?.name ?? "";
+  const address = customer?.address ?? "";
+  return {
+    id: row.id,
+    name: row.name,
+    customerName,
+    siteAddress: address,
+    deliveryAddress: address,
+    deliveryCompany: customerName,
+    billingClient: customerName,
+    clientContact: "",
+    status: row.status === "closed" ? "completed" : "active",
+  };
+}
+
+function mapMasterBase(row: {
+  id: string;
+  tenant_id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+}) {
+  return {
+    id: row.id,
+    tenantId: row.tenant_id,
+    name: row.name,
+    sortOrder: row.sort_order,
+    isActive: row.is_active,
+  };
+}
+
+export async function loginUser(
+  tenantCode: string,
+  userName: string,
+  role?: UserRole
+): Promise<User> {
+  const supabase = createAdminClient();
+  const code = tenantCode.trim().toUpperCase();
+
+  const { data: tenant, error: tenantError } = await supabase
+    .from("m_tenant")
+    .select("id, name, status")
+    .eq("tenant_code", code)
+    .maybeSingle();
+
+  if (tenantError) throw new Error(tenantError.message);
+  if (!tenant) throw new Error("会社コードが正しくありません");
+  if (tenant.status !== "active") throw new Error("このテナントは利用できません");
+
+  let query = supabase
+    .from("m_user")
+    .select("id, name, role, tenant_id, is_active")
+    .eq("tenant_id", tenant.id)
+    .eq("name", userName.trim())
+    .eq("is_active", true);
+
+  if (role) query = query.eq("role", role);
+
+  const { data: dbUser, error: userError } = await query.maybeSingle();
+  if (userError) throw new Error(userError.message);
+  if (!dbUser) throw new Error("ユーザーが見つかりません");
+
+  return {
+    id: dbUser.id,
+    name: dbUser.name,
+    role: dbUser.role as UserRole,
+    tenantId: tenant.id,
+    tenantName: tenant.name,
+  };
+}
+
+export async function listProjects(tenantId: string): Promise<Project[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("m_project")
+    .select("id, tenant_id, name, status, m_customer(name, address)")
+    .eq("tenant_id", tenantId)
+    .eq("status", "active")
+    .order("name");
+
+  if (error) throw new Error(error.message);
+  return (data as DbProjectRow[]).map(mapProject);
+}
+
+export async function getDailyReportMasters(
+  tenantId: string
+): Promise<DailyReportMasters> {
+  const supabase = createAdminClient();
+
+  const [workTypes, vehicles, materials] = await Promise.all([
+    supabase
+      .from("m_daily_report_work_type")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .order("sort_order"),
+    supabase
+      .from("m_daily_report_vehicle")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .order("sort_order"),
+    supabase
+      .from("m_daily_report_material")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .order("sort_order"),
+  ]);
+
+  if (workTypes.error) throw new Error(workTypes.error.message);
+  if (vehicles.error) throw new Error(vehicles.error.message);
+  if (materials.error) throw new Error(materials.error.message);
+
+  return {
+    workTypes: (workTypes.data ?? []).map(
+      (r) => mapMasterBase(r) as DailyReportWorkType
+    ),
+    vehicles: (vehicles.data ?? []).map((r) => ({
+      ...mapMasterBase({ ...r, name: r.label }),
+      code: r.code,
+      label: r.label,
+      noteLabel: r.note_label ?? undefined,
+    })) as DailyReportVehicle[],
+    materials: (materials.data ?? []).map((r) => ({
+      ...mapMasterBase(r),
+      unit: r.unit ?? undefined,
+      inputType: r.input_type as DailyReportMaterial["inputType"],
+    })) as DailyReportMaterial[],
+  };
+}
+
+export async function getSiteSurveyMasters(
+  tenantId: string
+): Promise<SiteSurveyMasters> {
+  const supabase = createAdminClient();
+
+  const [workTypes, tools] = await Promise.all([
+    supabase
+      .from("m_site_survey_work_type")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .order("sort_order"),
+    supabase
+      .from("m_site_survey_tool")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .order("sort_order"),
+  ]);
+
+  if (workTypes.error) throw new Error(workTypes.error.message);
+  if (tools.error) throw new Error(tools.error.message);
+
+  return {
+    workTypes: (workTypes.data ?? []).map(
+      (r) => mapMasterBase(r) as SiteSurveyWorkType
+    ),
+    tools: (tools.data ?? []).map((r) => mapMasterBase(r) as SiteSurveyTool),
+  };
+}
+
+export async function listExpenseCategories(
+  tenantId: string
+): Promise<ExpenseCategory[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("m_expense_category")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("is_active", true)
+    .order("sort_order");
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => mapMasterBase(r) as ExpenseCategory);
+}
+
+async function getProjectName(projectId: string): Promise<string> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("m_project")
+    .select("name")
+    .eq("id", projectId)
+    .maybeSingle();
+  return data?.name ?? "";
+}
+
+async function getUserName(userId: string): Promise<string> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("m_user")
+    .select("name")
+    .eq("id", userId)
+    .maybeSingle();
+  return data?.name ?? "";
+}
+
+async function getCategoryName(categoryId: string): Promise<string> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("m_expense_category")
+    .select("name")
+    .eq("id", categoryId)
+    .maybeSingle();
+  return data?.name ?? "";
+}
+
+export async function listDailyReports(
+  tenantId: string,
+  userId?: string
+): Promise<DailyReport[]> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("t_daily_report")
+    .select(
+      "id, project_id, user_id, report_date, content, status, created_at, submitted_at, m_project(name), m_user(name)"
+    )
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
+
+  if (userId) query = query.eq("user_id", userId);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => {
+    const project = unwrapJoin(
+      row.m_project as { name: string } | { name: string }[] | null
+    );
+    const user = unwrapJoin(
+      row.m_user as { name: string } | { name: string }[] | null
+    );
+    return {
+      id: row.id,
+      projectId: row.project_id,
+      projectName: project?.name ?? "",
+      userId: row.user_id,
+      userName: user?.name ?? "",
+      status: row.status as DailyReport["status"],
+      content: row.content as DailyReportContent,
+      createdAt: row.created_at,
+      submittedAt: row.submitted_at ?? undefined,
+    };
+  });
+}
+
+export async function createDailyReport(
+  tenantId: string,
+  input: {
+    projectId: string;
+    userId: string;
+    content: DailyReportContent;
+    status: DailyReport["status"];
+  }
+): Promise<DailyReport> {
+  const supabase = createAdminClient();
+  const now = new Date().toISOString();
+  const submittedAt = input.status === "submitted" ? now : null;
+
+  const { data, error } = await supabase
+    .from("t_daily_report")
+    .insert({
+      tenant_id: tenantId,
+      project_id: input.projectId,
+      user_id: input.userId,
+      report_date: input.content.workDateStart,
+      content: input.content,
+      status: input.status,
+      submitted_at: submittedAt,
+    })
+    .select("id, project_id, user_id, content, status, created_at, submitted_at")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const [projectName, userName] = await Promise.all([
+    getProjectName(data.project_id),
+    getUserName(data.user_id),
+  ]);
+
+  return {
+    id: data.id,
+    projectId: data.project_id,
+    projectName,
+    userId: data.user_id,
+    userName,
+    status: data.status as DailyReport["status"],
+    content: data.content as DailyReportContent,
+    createdAt: data.created_at,
+    submittedAt: data.submitted_at ?? undefined,
+  };
+}
+
+export async function listExpenses(
+  tenantId: string,
+  filters?: { userId?: string; projectId?: string; expenseDate?: string }
+): Promise<Expense[]> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("t_expense")
+    .select(
+      "id, project_id, user_id, amount, category_id, expense_date, status, input_method, created_at, m_project(name), m_user(name), m_expense_category(name)"
+    )
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
+
+  if (filters?.userId) query = query.eq("user_id", filters.userId);
+  if (filters?.projectId) query = query.eq("project_id", filters.projectId);
+  if (filters?.expenseDate) query = query.eq("expense_date", filters.expenseDate);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => {
+    const project = unwrapJoin(
+      row.m_project as { name: string } | { name: string }[] | null
+    );
+    const user = unwrapJoin(
+      row.m_user as { name: string } | { name: string }[] | null
+    );
+    const category = unwrapJoin(
+      row.m_expense_category as { name: string } | { name: string }[] | null
+    );
+    return {
+      id: row.id,
+      projectId: row.project_id,
+      projectName: project?.name ?? "",
+      userId: row.user_id,
+      userName: user?.name ?? "",
+      amount: Number(row.amount),
+      categoryId: row.category_id,
+      categoryName: category?.name ?? "",
+      expenseDate: row.expense_date,
+      status: row.status as Expense["status"],
+      inputMethod: row.input_method as Expense["inputMethod"],
+      createdAt: row.created_at,
+    };
+  });
+}
+
+export async function createExpense(
+  tenantId: string,
+  input: Omit<
+    Expense,
+    "id" | "createdAt" | "projectName" | "userName" | "categoryName"
+  >
+): Promise<Expense> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("t_expense")
+    .insert({
+      tenant_id: tenantId,
+      project_id: input.projectId,
+      user_id: input.userId,
+      amount: input.amount,
+      category_id: input.categoryId,
+      expense_date: input.expenseDate,
+      status: input.status,
+      input_method: input.inputMethod,
+    })
+    .select(
+      "id, project_id, user_id, amount, category_id, expense_date, status, input_method, created_at"
+    )
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const [projectName, userName, categoryName] = await Promise.all([
+    getProjectName(data.project_id),
+    getUserName(data.user_id),
+    getCategoryName(data.category_id),
+  ]);
+
+  return {
+    id: data.id,
+    projectId: data.project_id,
+    projectName,
+    userId: data.user_id,
+    userName,
+    amount: Number(data.amount),
+    categoryId: data.category_id,
+    categoryName,
+    expenseDate: data.expense_date,
+    status: data.status as Expense["status"],
+    inputMethod: data.input_method as Expense["inputMethod"],
+    memo: input.memo,
+    createdAt: data.created_at,
+  };
+}
+
+type ChecklistPayload = SiteSurveyContent & {
+  _meta?: { status?: SiteSurvey["status"]; publishedAt?: string };
+};
+
+function parseSiteSurveyRow(row: {
+  id: string;
+  project_id: string;
+  user_id: string;
+  checklist: ChecklistPayload;
+  created_at: string;
+  m_project: { name: string } | { name: string }[] | null;
+  m_user: { name: string } | { name: string }[] | null;
+}): SiteSurvey {
+  const project = unwrapJoin(row.m_project);
+  const user = unwrapJoin(row.m_user);
+  const { _meta, ...content } = row.checklist ?? {};
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    projectName: project?.name ?? "",
+    userId: row.user_id,
+    userName: user?.name ?? "",
+    status: _meta?.status ?? "draft",
+    content: content as SiteSurveyContent,
+    createdAt: row.created_at,
+    publishedAt: _meta?.publishedAt,
+  };
+}
+
+export async function listSiteSurveys(
+  tenantId: string,
+  userId?: string
+): Promise<SiteSurvey[]> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("t_site_survey")
+    .select(
+      "id, project_id, user_id, checklist, created_at, m_project(name), m_user(name)"
+    )
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
+
+  if (userId) query = query.eq("user_id", userId);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => parseSiteSurveyRow(row as never));
+}
+
+export async function createSiteSurvey(
+  tenantId: string,
+  input: {
+    projectId: string;
+    userId: string;
+    content: SiteSurveyContent;
+    status: SiteSurvey["status"];
+  }
+): Promise<SiteSurvey> {
+  const supabase = createAdminClient();
+  const publishedAt =
+    input.status === "published" ? new Date().toISOString() : undefined;
+  const checklist: ChecklistPayload = {
+    ...input.content,
+    _meta: { status: input.status, publishedAt },
+  };
+
+  const { data, error } = await supabase
+    .from("t_site_survey")
+    .insert({
+      tenant_id: tenantId,
+      project_id: input.projectId,
+      user_id: input.userId,
+      survey_date: input.content.surveyDate || new Date().toISOString(),
+      checklist,
+      shared_to_partner: input.status === "published",
+      shared_at: publishedAt ?? null,
+    })
+    .select("id, project_id, user_id, checklist, created_at")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const [projectName, userName] = await Promise.all([
+    getProjectName(data.project_id),
+    getUserName(data.user_id),
+  ]);
+
+  const { _meta, ...content } = (data.checklist as ChecklistPayload) ?? {};
+
+  return {
+    id: data.id,
+    projectId: data.project_id,
+    projectName,
+    userId: data.user_id,
+    userName,
+    status: _meta?.status ?? input.status,
+    content: content as SiteSurveyContent,
+    createdAt: data.created_at,
+    publishedAt: _meta?.publishedAt,
+  };
+}

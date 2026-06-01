@@ -1,7 +1,19 @@
-import { NextResponse } from "next/server";
-import { getMasters } from "@/lib/store/mock-store";
+import { NextRequest, NextResponse } from "next/server";
+import { getSiteSurveyMasters } from "@/lib/db/repository";
+import {
+  getSessionFromRequest,
+  unauthorizedResponse,
+} from "@/lib/auth/session";
 
-export async function GET() {
-  const masters = getMasters();
-  return NextResponse.json(masters.siteSurvey);
+export async function GET(request: NextRequest) {
+  const session = getSessionFromRequest(request);
+  if (!session) return unauthorizedResponse();
+
+  try {
+    const masters = await getSiteSurveyMasters(session.tenantId);
+    return NextResponse.json(masters);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "取得に失敗しました";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
