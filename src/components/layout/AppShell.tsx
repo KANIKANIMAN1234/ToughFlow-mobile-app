@@ -60,6 +60,34 @@ function NavLinks({
   );
 }
 
+function NavTabs({ pathname }: { pathname: string }) {
+  return (
+    <nav
+      aria-label="メインメニュー"
+      className="flex shrink-0 gap-0.5 overflow-x-auto border-b border-surface-border bg-white px-4"
+    >
+      {navItems.map(({ href, label, icon: Icon }) => {
+        const active = pathname.startsWith(href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+              active
+                ? "border-brand-600 text-brand-700"
+                : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900"
+            )}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            {label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function AppShell({
   children,
   title,
@@ -74,38 +102,25 @@ export function AppShell({
 
   if (isTablet) {
     return (
-      <div className="flex min-h-screen w-full bg-surface">
-        <aside className="flex w-60 shrink-0 flex-col border-r border-surface-border bg-white">
-          <div className="flex h-14 items-center border-b px-4">
-            <span className="font-bold text-brand-700">ToughFlow</span>
+      <div className="flex min-h-screen flex-col bg-surface">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-surface-border bg-white px-6">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-brand-600">ToughFlow</p>
+            <h1 className="truncate text-sm font-bold text-slate-900">{title}</h1>
           </div>
-          <nav className="flex-1 p-3">
-            <NavLinks pathname={pathname} />
-          </nav>
-          <div className="border-t p-4 text-xs text-slate-500">
-            {user?.tenantName}
-          </div>
-        </aside>
+          <DisplayModeToggle />
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="truncate text-xs text-slate-500"
+          >
+            {user?.name}
+          </button>
+        </header>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-surface-border bg-white px-6">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-brand-600">ToughFlow</p>
-              <h1 className="truncate text-sm font-bold text-slate-900">
-                {title}
-              </h1>
-            </div>
-            <DisplayModeToggle />
-            <button
-              type="button"
-              onClick={() => logout()}
-              className="truncate text-xs text-slate-500"
-            >
-              {user?.name}
-            </button>
-          </header>
-          <main className="flex-1">{children}</main>
-        </div>
+        <NavTabs pathname={pathname} />
+
+        <main className="flex min-h-0 flex-1 flex-col">{children}</main>
       </div>
     );
   }

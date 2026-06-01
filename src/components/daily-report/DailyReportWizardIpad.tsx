@@ -32,7 +32,7 @@ export function DailyReportWizardIpad() {
 
   return (
     <AppShell title="作業日報">
-      <div className="flex h-[calc(100dvh-3.5rem)] flex-col bg-slate-200">
+      <div className="flex h-full min-h-0 flex-1 flex-col bg-slate-200">
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <DailyReportScrollForm
             projects={projects}
