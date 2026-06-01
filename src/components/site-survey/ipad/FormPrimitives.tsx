@@ -10,16 +10,20 @@ export function PaperPage({
   children,
   className,
   label,
+  breakBefore,
 }: {
   children: ReactNode;
   className?: string;
   label?: string;
+  /** 印刷/PDF 時に直前で改ページ */
+  breakBefore?: boolean;
 }) {
   return (
     <section
       className={cn(
         "relative border border-slate-800 bg-white shadow-sm",
         A4_PAGE_MIN_H,
+        breakBefore && "break-before-page",
         className
       )}
     >

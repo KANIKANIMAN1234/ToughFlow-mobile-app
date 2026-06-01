@@ -130,7 +130,7 @@ export function SiteSurveyScrollForm({
         </label>
       </div>
 
-      <PaperPage label="1/2 — IMG_5180">
+      <PaperPage label="1/3 — IMG_5180">
         <div className="p-3">
           <h2 className="mb-3 text-center text-lg font-bold tracking-widest">
             現 地 調 査 報 告 書
@@ -581,7 +581,7 @@ export function SiteSurveyScrollForm({
         </div>
       </PaperPage>
 
-      <PaperPage label="2/2 — IMG_5181">
+      <PaperPage label="2/3 — IMG_5181">
         <div className="p-3">
           <table className="w-full border-collapse text-xs">
             <thead>
@@ -638,17 +638,19 @@ export function SiteSurveyScrollForm({
               ＋ 道具行を追加（右列用）
             </button>
           </div>
+        </div>
+      </PaperPage>
 
-          <div className="mt-6 border border-slate-800 p-3">
-            <p className="mb-2 text-center text-sm font-medium">
-              現場調査写真（PDF 3ページ目）
-            </p>
-            <SiteSurveyPhotoEntries
-              content={content}
-              setContent={setContent}
-              variant="paper"
-            />
-          </div>
+      <PaperPage label="3/3 — 現場調査写真" breakBefore>
+        <div className="p-3">
+          <p className="mb-3 text-center text-sm font-medium">
+            現場調査写真（PDF 3ページ目）
+          </p>
+          <SiteSurveyPhotoEntries
+            content={content}
+            setContent={setContent}
+            variant="paper"
+          />
         </div>
       </PaperPage>
     </div>
