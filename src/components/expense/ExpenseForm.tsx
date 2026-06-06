@@ -95,7 +95,7 @@ export function ExpenseForm() {
           ) : (
             <Camera className="h-8 w-8 text-brand-600" />
           )}
-          <span className="text-sm font-medium text-brand-700">
+          <span className="text-caption font-normal text-brand-600">
             領収書を撮影（OCR）
           </span>
           <input

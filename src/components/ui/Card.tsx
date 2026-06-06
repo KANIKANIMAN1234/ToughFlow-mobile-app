@@ -13,12 +13,14 @@ export function Card({
   return (
     <section
       className={cn(
-        "rounded-2xl border border-surface-border bg-surface-card p-4 shadow-sm",
+        "rounded-card border border-surface-border bg-surface-card p-5",
         className
       )}
     >
       {title && (
-        <h2 className="mb-3 text-sm font-bold text-slate-800">{title}</h2>
+        <h2 className="apple-heading mb-3 text-caption font-semibold">
+          {title}
+        </h2>
       )}
       {children}
     </section>

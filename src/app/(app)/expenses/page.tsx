@@ -1,33 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api/client";
+import { CardListSkeleton } from "@/components/ui/Skeleton";
+import { useApi } from "@/hooks/useApi";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import type { Expense } from "@/lib/types";
 import { formatDate, formatYen } from "@/lib/utils";
 
 export default function ExpensesPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const { user, authLoading } = useAuthGuard();
+  const { data, isLoading } = useApi<{ expenses: Expense[] }>(
+    user ? `/api/expenses?userId=${user.id}` : null
+  );
 
-  useEffect(() => {
-    if (!loading && !user) router.replace("/login");
-  }, [user, loading, router]);
+  const expenses = data?.expenses ?? [];
 
-  useEffect(() => {
-    if (!user) return;
-    api
-      .get<{ expenses: Expense[] }>(`/api/expenses?userId=${user.id}`)
-      .then((d) => setExpenses(d.expenses));
-  }, [user]);
-
-  if (loading || !user) return null;
+  if (authLoading || !user) {
+    return (
+      <AppShell title="立替精算一覧">
+        <CardListSkeleton />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell title="立替精算一覧">
@@ -36,26 +33,32 @@ export default function ExpensesPage() {
           ＋ 新規登録
         </Button>
       </Link>
-      <div className="space-y-3">
-        {expenses.length === 0 && (
-          <p className="text-center text-sm text-slate-500">
-            登録がありません
-          </p>
-        )}
-        {expenses.map((e) => (
-          <Card key={e.id}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-semibold">{e.projectName}</p>
-                <p className="text-xs text-slate-500">
-                  {formatDate(e.expenseDate)} · {e.categoryName}
+      {isLoading && !data ? (
+        <CardListSkeleton />
+      ) : (
+        <div className="space-y-3">
+          {expenses.length === 0 && (
+            <p className="text-center text-caption text-apple-glyph">
+              登録がありません
+            </p>
+          )}
+          {expenses.map((e) => (
+            <Card key={e.id}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-normal text-apple-text">{e.projectName}</p>
+                  <p className="text-nav-link text-apple-glyph">
+                    {formatDate(e.expenseDate)} · {e.categoryName}
+                  </p>
+                </div>
+                <p className="font-normal text-brand-600">
+                  {formatYen(e.amount)}
                 </p>
               </div>
-              <p className="font-bold text-brand-700">{formatYen(e.amount)}</p>
-            </div>
-          </Card>
-        ))}
-      </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </AppShell>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DisplayModeProvider } from "@/contexts/DisplayModeContext";
+import { SWRProvider } from "@/components/providers/SWRProvider";
 
 export const metadata: Metadata = {
   title: "ToughFlow",
@@ -17,7 +18,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#1d4ed8",
+  themeColor: "#0071e3",
 };
 
 export default function RootLayout({
@@ -28,9 +29,11 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <DisplayModeProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </DisplayModeProvider>
+        <SWRProvider>
+          <DisplayModeProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </DisplayModeProvider>
+        </SWRProvider>
       </body>
     </html>
   );

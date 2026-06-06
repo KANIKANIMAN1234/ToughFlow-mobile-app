@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { formatDbError } from "@/lib/db/errors";
 import type {
   DailyReport,
   DailyReportContent,
@@ -80,7 +81,7 @@ export async function loginUser(
     .eq("tenant_code", code)
     .maybeSingle();
 
-  if (tenantError) throw new Error(tenantError.message);
+  if (tenantError) throw new Error(formatDbError(tenantError.message));
   if (!tenant) throw new Error("会社コードが正しくありません");
   if (tenant.status !== "active") throw new Error("このテナントは利用できません");
 
@@ -94,7 +95,7 @@ export async function loginUser(
   if (role) query = query.eq("role", role);
 
   const { data: dbUser, error: userError } = await query.maybeSingle();
-  if (userError) throw new Error(userError.message);
+  if (userError) throw new Error(formatDbError(userError.message));
   if (!dbUser) throw new Error("ユーザーが見つかりません");
 
   return {

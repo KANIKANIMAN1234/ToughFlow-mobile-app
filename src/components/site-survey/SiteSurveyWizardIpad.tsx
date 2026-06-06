@@ -20,14 +20,14 @@ export function SiteSurveyWizardIpad() {
   if (!masters) {
     return (
       <AppShell title="現地調査">
-        <p className="p-6 text-center text-slate-500">読み込み中…</p>
+        <p className="p-6 text-center text-apple-glyph">読み込み中…</p>
       </AppShell>
     );
   }
 
   return (
     <AppShell title="現地調査報告書">
-      <div className="flex h-full min-h-0 flex-1 flex-col bg-slate-200">
+      <div className="flex h-full min-h-0 flex-1 flex-col bg-apple-section">
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <SiteSurveyScrollForm
             projects={projects}

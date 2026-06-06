@@ -9,11 +9,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary: "bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-900",
+  primary:
+    "bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-900 focus-apple",
   secondary:
-    "bg-white text-brand-700 border border-surface-border hover:bg-brand-50",
-  ghost: "bg-transparent text-slate-700 hover:bg-slate-100",
-  danger: "bg-red-600 text-white hover:bg-red-700",
+    "border border-brand-600 bg-transparent text-brand-600 hover:bg-brand-50 focus-apple",
+  ghost:
+    "bg-transparent text-apple-text hover:bg-apple-section focus-apple",
+  danger: "bg-red-600 text-white hover:bg-red-700 focus-apple",
 };
 
 export function Button({
@@ -26,7 +28,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-pill px-[22px] py-2 text-body font-normal transition-colors disabled:opacity-50",
         variants[variant],
         fullWidth && "w-full",
         className

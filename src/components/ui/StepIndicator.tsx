@@ -17,10 +17,10 @@ export function StepIndicator({
           <div
             key={label}
             className={cn(
-              "flex min-w-[72px] flex-1 flex-col items-center rounded-lg px-1 py-2 text-center text-[10px] font-medium",
+              "flex min-w-[72px] flex-1 flex-col items-center rounded-xl px-1 py-2 text-center text-nav-link font-normal",
               active && "bg-brand-600 text-white",
-              done && !active && "bg-brand-100 text-brand-700",
-              !active && !done && "bg-slate-100 text-slate-500"
+              done && !active && "bg-brand-50 text-brand-700",
+              !active && !done && "bg-apple-section text-apple-glyph"
             )}
           >
             <span>{step}</span>

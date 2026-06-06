@@ -44,14 +44,14 @@ function NavLinks({
             href={href}
             onClick={onNavigate}
             className={cn(
-              "mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium",
+              "mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-normal transition-colors",
               active
-                ? "bg-brand-50 text-brand-700"
-                : "text-slate-700 hover:bg-slate-50",
+                ? "bg-apple-section text-apple-text"
+                : "text-apple-text hover:bg-apple-section/70",
               className
             )}
           >
-            <Icon className="h-5 w-5 shrink-0" />
+            <Icon className="h-5 w-5 shrink-0 text-apple-glyph" />
             {label}
           </Link>
         );
@@ -64,7 +64,7 @@ function NavTabs({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="メインメニュー"
-      className="flex shrink-0 gap-0.5 overflow-x-auto border-b border-surface-border bg-white px-4"
+      className="flex shrink-0 gap-1 overflow-x-auto border-b border-surface-border bg-white px-4"
     >
       {navItems.map(({ href, label, icon: Icon }) => {
         const active = pathname.startsWith(href);
@@ -73,10 +73,10 @@ function NavTabs({ pathname }: { pathname: string }) {
             key={href}
             href={href}
             className={cn(
-              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-nav-link font-normal transition-colors",
               active
-                ? "border-brand-600 text-brand-700"
-                : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                ? "border-brand-600 text-apple-text"
+                : "border-transparent text-apple-glyph hover:text-apple-text"
             )}
           >
             <Icon className="h-4 w-4 shrink-0" />
@@ -103,16 +103,16 @@ export function AppShell({
   if (isTablet) {
     return (
       <div className="flex min-h-screen flex-col bg-surface">
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-surface-border bg-white px-6">
+        <header className="glass-nav sticky top-0 z-30 flex h-11 shrink-0 items-center gap-3 px-6">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-brand-600">ToughFlow</p>
-            <h1 className="truncate text-sm font-bold text-slate-900">{title}</h1>
+            <p className="text-nav-link font-normal text-apple-glyph">ToughFlow</p>
+            <h1 className="apple-heading truncate text-caption">{title}</h1>
           </div>
           <DisplayModeToggle />
           <button
             type="button"
             onClick={() => logout()}
-            className="truncate text-xs text-slate-500"
+            className="max-w-[5rem] truncate text-nav-link text-apple-glyph"
           >
             {user?.name}
           </button>
@@ -127,24 +127,24 @@ export function AppShell({
 
   return (
     <div className="mx-auto min-h-screen max-w-mobile bg-surface">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-surface-border bg-white px-3">
+      <header className="glass-nav sticky top-0 z-30 flex h-11 items-center gap-2 px-3">
         <button
           type="button"
           aria-label="メニュー"
           onClick={() => setOpen(true)}
-          className="rounded-lg p-2 hover:bg-slate-100"
+          className="rounded-lg p-2 text-apple-text hover:bg-apple-section focus-apple"
         >
           <Menu className="h-5 w-5" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-brand-600">ToughFlow</p>
-          <h1 className="truncate text-sm font-bold text-slate-900">{title}</h1>
+          <p className="text-nav-link font-normal text-apple-glyph">ToughFlow</p>
+          <h1 className="apple-heading truncate text-caption">{title}</h1>
         </div>
         <DisplayModeToggle compact />
         <button
           type="button"
           onClick={() => logout()}
-          className="max-w-[4.5rem] truncate text-xs text-slate-500"
+          className="max-w-[4.5rem] truncate text-nav-link text-apple-glyph"
         >
           {user?.name}
         </button>
@@ -154,32 +154,36 @@ export function AppShell({
         <button
           type="button"
           aria-label="閉じる"
-          className="fixed inset-0 z-40 bg-black/40"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         />
       )}
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-full w-64 flex-col bg-white shadow-xl transition-transform",
+          "fixed left-0 top-0 z-50 flex h-full w-64 flex-col bg-[#fafafc] shadow-apple transition-transform",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-14 items-center justify-between border-b px-4">
-          <span className="font-bold text-brand-700">ToughFlow</span>
-          <button type="button" onClick={() => setOpen(false)}>
+        <div className="flex h-11 items-center justify-between border-b border-surface-border px-4">
+          <span className="apple-heading text-body">ToughFlow</span>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="rounded-lg p-1 text-apple-text hover:bg-apple-section focus-apple"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
         <nav className="flex-1 p-3">
           <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} />
         </nav>
-        <div className="border-t p-4 text-xs text-slate-500">
+        <div className="border-t border-surface-border p-4 text-nav-link text-apple-glyph">
           {user?.tenantName}
         </div>
       </aside>
 
-      <main className="px-4 py-4 pb-24">{children}</main>
+      <main className="px-4 py-5 pb-24">{children}</main>
     </div>
   );
 }

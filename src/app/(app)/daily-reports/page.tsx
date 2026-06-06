@@ -1,33 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api/client";
+import { CardListSkeleton } from "@/components/ui/Skeleton";
+import { useApi } from "@/hooks/useApi";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import type { DailyReport } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 export default function DailyReportsPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const [reports, setReports] = useState<DailyReport[]>([]);
+  const { user, authLoading } = useAuthGuard();
+  const { data, isLoading } = useApi<{ reports: DailyReport[] }>(
+    user ? `/api/daily-reports?userId=${user.id}` : null
+  );
 
-  useEffect(() => {
-    if (!loading && !user) router.replace("/login");
-  }, [user, loading, router]);
+  const reports = data?.reports ?? [];
 
-  useEffect(() => {
-    if (!user) return;
-    api
-      .get<{ reports: DailyReport[] }>(`/api/daily-reports?userId=${user.id}`)
-      .then((d) => setReports(d.reports));
-  }, [user]);
-
-  if (loading || !user) return null;
+  if (authLoading || !user) {
+    return (
+      <AppShell title="作業日報一覧">
+        <CardListSkeleton />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell title="作業日報一覧">
@@ -36,17 +33,23 @@ export default function DailyReportsPage() {
           ＋ 新規入力
         </Button>
       </Link>
-      <div className="space-y-3">
-        {reports.map((r) => (
-          <Card key={r.id}>
-            <p className="font-semibold">{r.content.billingClient}</p>
-            <p className="text-xs text-slate-500">
-              {formatDate(r.content.workDateStart)} · {r.projectName}
-            </p>
-            <p className="mt-1 text-xs text-brand-600">{r.status}</p>
-          </Card>
-        ))}
-      </div>
+      {isLoading && !data ? (
+        <CardListSkeleton />
+      ) : (
+        <div className="space-y-3">
+          {reports.map((r) => (
+            <Card key={r.id}>
+              <p className="font-normal text-apple-text">
+                {r.content.billingClient}
+              </p>
+              <p className="text-nav-link text-apple-glyph">
+                {formatDate(r.content.workDateStart)} · {r.projectName}
+              </p>
+              <p className="mt-1 text-xs text-brand-600">{r.status}</p>
+            </Card>
+          ))}
+        </div>
+      )}
     </AppShell>
   );
 }

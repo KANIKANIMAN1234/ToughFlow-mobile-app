@@ -34,7 +34,7 @@ export function DailyReportWizard() {
   if (!masters) {
     return (
       <AppShell title="作業日報">
-        <p className="text-center text-slate-500">読み込み中…</p>
+        <p className="text-center text-apple-glyph">読み込み中…</p>
       </AppShell>
     );
   }

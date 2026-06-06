@@ -9,7 +9,7 @@ export function DisplayModeToggle({ compact }: { compact?: boolean }) {
 
   return (
     <div
-      className="flex rounded-lg border border-surface-border bg-slate-50 p-0.5"
+      className="flex rounded-pill border border-surface-border bg-apple-section p-0.5"
       role="group"
       aria-label="表示モード"
     >
@@ -24,10 +24,10 @@ export function DisplayModeToggle({ compact }: { compact?: boolean }) {
           type="button"
           onClick={() => setMode(value)}
           className={cn(
-            "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors",
+            "flex items-center gap-1 rounded-pill px-2.5 py-1 text-nav-link font-normal transition-colors focus-apple",
             mode === value
-              ? "bg-white text-brand-700 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
+              ? "bg-white text-apple-text shadow-sm"
+              : "text-apple-glyph hover:text-apple-text"
           )}
           aria-pressed={mode === value}
         >

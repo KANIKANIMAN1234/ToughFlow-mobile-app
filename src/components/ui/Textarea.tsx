@@ -10,12 +10,12 @@ export function Textarea({ label, className, id, ...props }: TextareaProps) {
   return (
     <label className="block space-y-1.5">
       {label && (
-        <span className="text-sm font-medium text-slate-700">{label}</span>
+        <span className="text-caption font-normal text-apple-text">{label}</span>
       )}
       <textarea
         id={inputId}
         className={cn(
-          "min-h-[120px] w-full rounded-xl border border-surface-border bg-white px-3 py-3 text-base text-slate-900 outline-none ring-brand-500 focus:ring-2",
+          "focus-apple min-h-[120px] w-full rounded-xl border border-surface-border bg-white px-3 py-3 text-body text-apple-text outline-none",
           className
         )}
         {...props}
