@@ -107,15 +107,34 @@ export async function loginUser(
   };
 }
 
-export async function listProjects(tenantId: string): Promise<Project[]> {
+export async function listProjects(
+  tenantId: string,
+  options?: { userId?: string; role?: UserRole }
+): Promise<Project[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let assignedIds: string[] | null = null;
+
+  if (options?.role === "field" && options.userId) {
+    const { data: assignments, error: assignError } = await supabase
+      .from("t_project_assignment")
+      .select("project_id")
+      .eq("tenant_id", tenantId)
+      .eq("user_id", options.userId);
+    if (assignError) throw new Error(assignError.message);
+    assignedIds = (assignments ?? []).map((r) => r.project_id as string);
+    if (assignedIds.length === 0) return [];
+  }
+
+  let query = supabase
     .from("m_project")
     .select("id, tenant_id, name, status, m_customer(name, address)")
     .eq("tenant_id", tenantId)
     .eq("status", "active")
     .order("name");
 
+  if (assignedIds) query = query.in("id", assignedIds);
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data as DbProjectRow[]).map(mapProject);
 }
@@ -330,9 +349,97 @@ export async function createDailyReport(
   };
 }
 
+export async function submitExpenseBatch(
+  tenantId: string,
+  userId: string,
+  expenseIds?: string[]
+): Promise<number> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("t_expense")
+    .update({ status: "submitted" })
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId)
+    .eq("status", "draft");
+
+  if (expenseIds?.length) query = query.in("id", expenseIds);
+
+  const { data, error } = await query.select("id");
+  if (error) throw new Error(error.message);
+  return data?.length ?? 0;
+}
+
+export async function getPendingReminders(tenantId: string, userId: string) {
+  const supabase = createAdminClient();
+  const [expensesRes, reportsRes] = await Promise.all([
+    supabase
+      .from("t_expense")
+      .select("*", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("user_id", userId)
+      .eq("status", "draft"),
+    supabase
+      .from("t_daily_report")
+      .select("*", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("user_id", userId)
+      .eq("status", "draft"),
+  ]);
+
+  if (expensesRes.error) throw new Error(expensesRes.error.message);
+  if (reportsRes.error) throw new Error(reportsRes.error.message);
+
+  return {
+    draftExpenses: expensesRes.count ?? 0,
+    draftDailyReports: reportsRes.count ?? 0,
+  };
+}
+
+export async function getDailyReport(
+  tenantId: string,
+  id: string
+): Promise<DailyReport | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("t_daily_report")
+    .select(
+      "id, project_id, user_id, content, status, created_at, submitted_at, m_project(name), m_user(name)"
+    )
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  const project = unwrapJoin(
+    data.m_project as { name: string } | { name: string }[] | null
+  );
+  const user = unwrapJoin(
+    data.m_user as { name: string } | { name: string }[] | null
+  );
+
+  return {
+    id: data.id,
+    projectId: data.project_id,
+    projectName: project?.name ?? "",
+    userId: data.user_id,
+    userName: user?.name ?? "",
+    status: data.status as DailyReport["status"],
+    content: data.content as DailyReportContent,
+    createdAt: data.created_at,
+    submittedAt: data.submitted_at ?? undefined,
+  };
+}
+
 export async function listExpenses(
   tenantId: string,
-  filters?: { userId?: string; projectId?: string; expenseDate?: string }
+  filters?: {
+    userId?: string;
+    projectId?: string;
+    expenseDate?: string;
+    status?: Expense["status"];
+  }
 ): Promise<Expense[]> {
   const supabase = createAdminClient();
   let query = supabase
@@ -346,6 +453,7 @@ export async function listExpenses(
   if (filters?.userId) query = query.eq("user_id", filters.userId);
   if (filters?.projectId) query = query.eq("project_id", filters.projectId);
   if (filters?.expenseDate) query = query.eq("expense_date", filters.expenseDate);
+  if (filters?.status) query = query.eq("status", filters.status);
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -517,7 +625,7 @@ export async function createSiteSurvey(
 
   const { _meta, ...content } = (data.checklist as ChecklistPayload) ?? {};
 
-  return {
+  const survey: SiteSurvey = {
     id: data.id,
     projectId: data.project_id,
     projectName,
@@ -528,4 +636,47 @@ export async function createSiteSurvey(
     createdAt: data.created_at,
     publishedAt: _meta?.publishedAt,
   };
+
+  if (input.status === "published") {
+    await createDispatchDraftFromSurvey(
+      tenantId,
+      survey.id,
+      input.projectId,
+      input.content
+    );
+  }
+
+  return survey;
+}
+
+async function createDispatchDraftFromSurvey(
+  tenantId: string,
+  surveyId: string,
+  projectId: string,
+  content: SiteSurveyContent
+) {
+  const workDate = content.workDatetime?.slice(0, 10);
+  if (!workDate) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (workDate <= today) return;
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("t_dispatch").insert({
+    tenant_id: tenantId,
+    dispatch_date: workDate,
+    project_id: projectId,
+    row_status: "draft",
+    content: {
+      customerName: content.customerName,
+      siteName: content.siteAddress,
+      assignee: content.surveyorName,
+      vehicles: content.plannedVehicles.join(", "),
+      workers: content.plannedWorkers ?? 0,
+      source: "site_survey",
+      surveyId,
+    },
+  });
+
+  if (error) throw new Error(error.message);
 }

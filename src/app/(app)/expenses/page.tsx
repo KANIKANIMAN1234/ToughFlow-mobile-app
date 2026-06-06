@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
@@ -7,16 +8,37 @@ import { Card } from "@/components/ui/Card";
 import { CardListSkeleton } from "@/components/ui/Skeleton";
 import { useApi } from "@/hooks/useApi";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { api } from "@/lib/api/client";
 import type { Expense } from "@/lib/types";
 import { formatDate, formatYen } from "@/lib/utils";
 
+const statusLabel: Record<Expense["status"], string> = {
+  draft: "下書き",
+  submitted: "提出済",
+  approved: "承認済",
+  rejected: "差戻し",
+};
+
 export default function ExpensesPage() {
   const { user, authLoading } = useAuthGuard();
-  const { data, isLoading } = useApi<{ expenses: Expense[] }>(
+  const { data, isLoading, mutate } = useApi<{ expenses: Expense[] }>(
     user ? `/api/expenses?userId=${user.id}` : null
   );
+  const [batchSubmitting, setBatchSubmitting] = useState(false);
 
   const expenses = data?.expenses ?? [];
+  const draftCount = expenses.filter((e) => e.status === "draft").length;
+
+  async function handleBatchSubmit() {
+    if (!user || draftCount === 0) return;
+    setBatchSubmitting(true);
+    try {
+      await api.post("/api/expenses/submit-batch", {});
+      await mutate();
+    } finally {
+      setBatchSubmitting(false);
+    }
+  }
 
   if (authLoading || !user) {
     return (
@@ -33,6 +55,19 @@ export default function ExpensesPage() {
           ＋ 新規登録
         </Button>
       </Link>
+      {draftCount > 0 && (
+        <Button
+          variant="secondary"
+          fullWidth
+          className="mb-4"
+          disabled={batchSubmitting}
+          onClick={() => void handleBatchSubmit()}
+        >
+          {batchSubmitting
+            ? "提出中…"
+            : `月末一括提出（下書き ${draftCount}件）`}
+        </Button>
+      )}
       {isLoading && !data ? (
         <CardListSkeleton />
       ) : (
@@ -51,9 +86,14 @@ export default function ExpensesPage() {
                     {formatDate(e.expenseDate)} · {e.categoryName}
                   </p>
                 </div>
-                <p className="font-normal text-brand-600">
-                  {formatYen(e.amount)}
-                </p>
+                <div className="text-right">
+                  <p className="font-normal text-brand-600">
+                    {formatYen(e.amount)}
+                  </p>
+                  <p className="text-xs text-apple-glyph">
+                    {statusLabel[e.status]}
+                  </p>
+                </div>
               </div>
             </Card>
           ))}

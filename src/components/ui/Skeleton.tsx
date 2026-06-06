@@ -26,6 +26,23 @@ export function CardListSkeleton({ count = 4 }: { count?: number }) {
   );
 }
 
+export function DetailSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-card border border-surface-border bg-white p-4">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="mt-4 h-4 w-full" />
+        <Skeleton className="mt-2 h-4 w-4/5" />
+        <Skeleton className="mt-2 h-4 w-3/5" />
+      </div>
+      <div className="rounded-card border border-surface-border bg-white p-4">
+        <Skeleton className="h-5 w-24" />
+        <Skeleton className="mt-4 h-4 w-full" />
+      </div>
+    </div>
+  );
+}
+
 export function HomeSkeleton() {
   return (
     <>

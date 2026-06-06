@@ -59,7 +59,7 @@ export function ExpenseForm() {
     }
   }
 
-  async function handleSubmit() {
+  async function saveExpense(status: "draft" | "submitted") {
     if (!user || !projectId || !categoryId) return;
     const project = projects.find((p) => p.id === projectId);
     const category = categories.find((c) => c.id === categoryId);
@@ -78,7 +78,7 @@ export function ExpenseForm() {
         expenseDate,
         memo,
         inputMethod,
-        status: "submitted",
+        status,
       });
       router.push("/expenses");
     } finally {
@@ -173,8 +173,19 @@ export function ExpenseForm() {
         </div>
       </Card>
 
-      <div className="fixed bottom-0 left-0 right-0 mx-auto max-w-mobile border-t bg-white p-4">
-        <Button fullWidth disabled={submitting || !amount} onClick={handleSubmit}>
+      <div className="fixed bottom-0 left-0 right-0 mx-auto flex max-w-mobile gap-2 border-t bg-white p-4">
+        <Button
+          variant="secondary"
+          disabled={submitting || !amount}
+          onClick={() => saveExpense("draft")}
+        >
+          {submitting ? "保存中…" : "下書き"}
+        </Button>
+        <Button
+          fullWidth
+          disabled={submitting || !amount}
+          onClick={() => saveExpense("submitted")}
+        >
           {submitting ? "保存中…" : "提出"}
         </Button>
       </div>

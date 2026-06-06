@@ -38,15 +38,17 @@ export default function DailyReportsPage() {
       ) : (
         <div className="space-y-3">
           {reports.map((r) => (
-            <Card key={r.id}>
-              <p className="font-normal text-apple-text">
-                {r.content.billingClient}
-              </p>
-              <p className="text-nav-link text-apple-glyph">
-                {formatDate(r.content.workDateStart)} · {r.projectName}
-              </p>
-              <p className="mt-1 text-xs text-brand-600">{r.status}</p>
-            </Card>
+            <Link key={r.id} href={`/daily-reports/${r.id}`}>
+              <Card>
+                <p className="font-normal text-apple-text">
+                  {r.content.billingClient}
+                </p>
+                <p className="text-nav-link text-apple-glyph">
+                  {formatDate(r.content.workDateStart)} · {r.projectName}
+                </p>
+                <p className="mt-1 text-xs text-brand-600">{r.status}</p>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

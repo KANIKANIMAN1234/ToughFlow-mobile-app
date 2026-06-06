@@ -24,6 +24,7 @@ export function SiteSurveyWizard() {
     content,
     setContent,
     handleSubmit,
+    goToPreview,
   } = useSiteSurveyWizard();
 
   if (!masters) {
@@ -296,9 +297,9 @@ export function SiteSurveyWizard() {
             <Button
               fullWidth
               disabled={submitting}
-              onClick={() => handleSubmit(true)}
+              onClick={goToPreview}
             >
-              確定
+              プレビューへ
             </Button>
           </>
         )}

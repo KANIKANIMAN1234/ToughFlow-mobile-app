@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   createDailyReport,
+  getDailyReport,
   listDailyReports,
 } from "@/lib/db/repository";
 import {
@@ -13,8 +14,19 @@ export async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request);
   if (!session) return unauthorizedResponse();
 
-  const userId = request.nextUrl.searchParams.get("userId") ?? undefined;
+  const { searchParams } = request.nextUrl;
+  const id = searchParams.get("id");
+  const userId = searchParams.get("userId") ?? undefined;
+
   try {
+    if (id) {
+      const report = await getDailyReport(session.tenantId, id);
+      if (!report) {
+        return NextResponse.json({ error: "見つかりません" }, { status: 404 });
+      }
+      return NextResponse.json({ report });
+    }
+
     const reports = await listDailyReports(session.tenantId, userId);
     return NextResponse.json({ reports });
   } catch (e) {

@@ -5,6 +5,7 @@ import { FileText, MapPin, Receipt } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { HomeSkeleton } from "@/components/ui/Skeleton";
+import { useApi } from "@/hooks/useApi";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 const actions = [
@@ -31,8 +32,23 @@ const actions = [
   },
 ];
 
+type Reminders = {
+  draftExpenses: number;
+  draftDailyReports: number;
+};
+
 export default function HomePage() {
   const { user, authLoading } = useAuthGuard();
+  const { data: reminderData } = useApi<{ reminders: Reminders }>(
+    user ? "/api/reminders" : null
+  );
+
+  const reminders = reminderData?.reminders ?? {
+    draftExpenses: 0,
+    draftDailyReports: 0,
+  };
+  const hasReminders =
+    reminders.draftExpenses > 0 || reminders.draftDailyReports > 0;
 
   if (authLoading || !user) {
     return (
@@ -69,9 +85,28 @@ export default function HomePage() {
       </div>
 
       <Card title="未提出リマインド" className="mt-4">
-        <p className="text-caption text-apple-glyph">
-          本日の作業日報・経費の未提出はありません（デモ）
-        </p>
+        {hasReminders ? (
+          <ul className="space-y-2 text-caption text-apple-text">
+            {reminders.draftDailyReports > 0 && (
+              <li>
+                <Link href="/daily-reports" className="text-apple-link">
+                  作業日報の下書きが {reminders.draftDailyReports} 件あります
+                </Link>
+              </li>
+            )}
+            {reminders.draftExpenses > 0 && (
+              <li>
+                <Link href="/expenses" className="text-apple-link">
+                  立替精算の下書きが {reminders.draftExpenses} 件あります
+                </Link>
+              </li>
+            )}
+          </ul>
+        ) : (
+          <p className="text-caption text-apple-glyph">
+            未提出の下書きはありません
+          </p>
+        )}
       </Card>
     </AppShell>
   );

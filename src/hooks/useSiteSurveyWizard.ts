@@ -10,6 +10,7 @@ import type {
   SiteSurveyMasters,
   SiteSurveyToolCheck,
 } from "@/lib/types";
+import { savePreviewState } from "@/lib/site-survey/preview-state";
 import { todayISO } from "@/lib/utils";
 
 export const SITE_SURVEY_STEPS = ["基本", "搬入", "作業", "道具", "写真"] as const;
@@ -103,6 +104,16 @@ export function useSiteSurveyWizard() {
     }
   }
 
+  function goToPreview() {
+    if (!selectedProject) return;
+    savePreviewState({
+      projectId: selectedProject.id,
+      projectName: selectedProject.name,
+      content,
+    });
+    router.push("/site-surveys/preview");
+  }
+
   return {
     step,
     setStep,
@@ -115,6 +126,7 @@ export function useSiteSurveyWizard() {
     setContent,
     selectedProject,
     handleSubmit,
+    goToPreview,
   };
 }
 
