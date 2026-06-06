@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatDbError } from "@/lib/db/errors";
+import { LineLinkRequiredError } from "@/lib/line/errors";
 import { resolveTenantByCodeForLine } from "@/lib/line/tenant";
 import type {
   DailyReport,
@@ -121,11 +122,53 @@ function toSessionUser(
   };
 }
 
+function matchDisplayName(displayName: string, userName: string) {
+  const dn = displayName.trim();
+  const un = userName.trim();
+  if (!dn || !un) return false;
+  if (dn === un) return true;
+  return dn.includes(un) || un.includes(dn);
+}
+
+async function linkLineUserId(
+  userId: string,
+  lineUserId: string,
+  tenant: { id: string; name: string }
+): Promise<User> {
+  const supabase = createAdminClient();
+
+  const { data: existing, error: existingError } = await supabase
+    .from("m_user")
+    .select("id")
+    .eq("tenant_id", tenant.id)
+    .eq("line_user_id", lineUserId)
+    .neq("id", userId)
+    .maybeSingle();
+
+  if (existingError) throw new Error(formatDbError(existingError.message));
+  if (existing) {
+    throw new Error("この LINE アカウントは別のユーザーに紐付け済みです");
+  }
+
+  const { data: updated, error: updateError } = await supabase
+    .from("m_user")
+    .update({ line_user_id: lineUserId })
+    .eq("id", userId)
+    .is("line_user_id", null)
+    .eq("is_active", true)
+    .select("id, name, role, tenant_id, is_active")
+    .single();
+
+  if (updateError) throw new Error(formatDbError(updateError.message));
+  return toSessionUser(updated, tenant);
+}
+
 /** LINE Login: line_user_id で m_user を特定（初回は displayName で自動紐付け） */
 export async function loginUserByLineId(
   tenantCode: string,
   lineUserId: string,
-  lineDisplayName?: string
+  lineDisplayName?: string,
+  options?: { returnTo?: string }
 ): Promise<User> {
   const supabase = createAdminClient();
   const tenant = await resolveTenantByCodeForLine(tenantCode);
@@ -143,33 +186,77 @@ export async function loginUserByLineId(
 
   const displayName = lineDisplayName?.trim();
   if (displayName) {
-    const { data: candidates, error: candidateError } = await supabase
+    const { data: unlinked, error: unlinkedError } = await supabase
       .from("m_user")
       .select("id, name, role, tenant_id, is_active, line_user_id")
       .eq("tenant_id", tenant.id)
-      .eq("name", displayName)
       .eq("is_active", true)
       .is("line_user_id", null);
 
-    if (candidateError) throw new Error(formatDbError(candidateError.message));
+    if (unlinkedError) throw new Error(formatDbError(unlinkedError.message));
 
-    if (candidates?.length === 1) {
-      const target = candidates[0];
-      const { data: updated, error: updateError } = await supabase
-        .from("m_user")
-        .update({ line_user_id: lineUserId })
-        .eq("id", target.id)
-        .select("id, name, role, tenant_id, is_active")
-        .single();
+    const matched =
+      unlinked?.filter((u) => matchDisplayName(displayName, u.name)) ?? [];
 
-      if (updateError) throw new Error(formatDbError(updateError.message));
-      return toSessionUser(updated, tenant);
+    if (matched.length === 1) {
+      return linkLineUserId(matched[0].id, lineUserId, tenant);
     }
   }
 
-  throw new Error(
-    "LINE アカウントが登録されていません。管理者にユーザー登録と紐付けを依頼してください。"
-  );
+  throw new LineLinkRequiredError({
+    lineUserId,
+    displayName: lineDisplayName,
+    tenantCode: tenantCode.trim().toUpperCase(),
+    returnTo: options?.returnTo,
+  });
+}
+
+export async function listUnlinkedUsers(tenantCode: string) {
+  const supabase = createAdminClient();
+  const tenant = await resolveTenantByCodeForLine(tenantCode);
+
+  const { data, error } = await supabase
+    .from("m_user")
+    .select("id, name, role")
+    .eq("tenant_id", tenant.id)
+    .eq("is_active", true)
+    .is("line_user_id", null)
+    .order("name");
+
+  if (error) throw new Error(formatDbError(error.message));
+  return {
+    tenantName: tenant.name,
+    users: (data ?? []).map((u) => ({
+      id: u.id,
+      name: u.name,
+      role: u.role as UserRole,
+    })),
+  };
+}
+
+export async function completeLineLink(
+  tenantCode: string,
+  lineUserId: string,
+  userId: string
+): Promise<User> {
+  const tenant = await resolveTenantByCodeForLine(tenantCode);
+  const supabase = createAdminClient();
+
+  const { data: target, error: targetError } = await supabase
+    .from("m_user")
+    .select("id, tenant_id, is_active, line_user_id")
+    .eq("id", userId)
+    .eq("tenant_id", tenant.id)
+    .eq("is_active", true)
+    .is("line_user_id", null)
+    .maybeSingle();
+
+  if (targetError) throw new Error(formatDbError(targetError.message));
+  if (!target) {
+    throw new Error("選択したユーザーは紐付けできません。管理者にお問い合わせください。");
+  }
+
+  return linkLineUserId(userId, lineUserId, tenant);
 }
 
 export async function listProjects(

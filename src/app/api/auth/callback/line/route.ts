@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   clearLineOAuthCookie,
+  clearLinePendingLinkCookie,
   readLineOAuthState,
+  setLinePendingLinkCookie,
 } from "@/lib/auth/line-oauth";
 import { setSessionCookie } from "@/lib/auth/session";
 import { loginUserByLineId } from "@/lib/db/repository";
-import { exchangeLineCode, verifyLineIdToken } from "@/lib/line/oauth";
+import { LineLinkRequiredError } from "@/lib/line/errors";
+import {
+  exchangeLineCode,
+  fetchLineProfile,
+  verifyLineIdToken,
+} from "@/lib/line/oauth";
 import { toSupabaseUserMessage } from "@/lib/supabase/admin";
 
 function loginRedirect(request: NextRequest, message: string) {
@@ -13,6 +20,7 @@ function loginRedirect(request: NextRequest, message: string) {
   url.searchParams.set("error", message);
   const response = NextResponse.redirect(url);
   clearLineOAuthCookie(response);
+  clearLinePendingLinkCookie(response);
   return response;
 }
 
@@ -43,20 +51,43 @@ export async function GET(request: NextRequest) {
       return loginRedirect(request, "認証の検証に失敗しました");
     }
 
+    let displayName = profile.name;
+    if (!displayName) {
+      try {
+        const lineProfile = await fetchLineProfile(tokens.access_token);
+        displayName = lineProfile.displayName;
+      } catch {
+        // プロフィール API 失敗時は紐付け画面へ誘導
+      }
+    }
+
+    const returnTo = oauth.returnTo?.startsWith("/") ? oauth.returnTo : "/home";
+
     const user = await loginUserByLineId(
       oauth.tenantCode,
       profile.sub,
-      profile.name
+      displayName,
+      { returnTo }
     );
 
-    const destination = oauth.returnTo?.startsWith("/")
-      ? oauth.returnTo
-      : "/home";
-    const response = NextResponse.redirect(new URL(destination, request.url));
+    const response = NextResponse.redirect(new URL(returnTo, request.url));
     setSessionCookie(response, user);
     clearLineOAuthCookie(response);
+    clearLinePendingLinkCookie(response);
     return response;
   } catch (e) {
+    if (e instanceof LineLinkRequiredError) {
+      const response = NextResponse.redirect(new URL("/login/link", request.url));
+      setLinePendingLinkCookie(response, {
+        lineUserId: e.lineUserId,
+        displayName: e.displayName,
+        tenantCode: e.tenantCode,
+        returnTo: e.returnTo,
+      });
+      clearLineOAuthCookie(response);
+      return response;
+    }
+
     const raw = e instanceof Error ? e.message : "LINE ログインに失敗しました";
     return loginRedirect(request, toSupabaseUserMessage(raw));
   }

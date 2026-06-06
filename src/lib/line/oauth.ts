@@ -87,3 +87,25 @@ export async function verifyLineIdToken(
 
   return (await res.json()) as LineIdTokenPayload;
 }
+
+export async function fetchLineProfile(accessToken: string): Promise<{
+  userId: string;
+  displayName: string;
+  pictureUrl?: string;
+}> {
+  const res = await fetch("https://api.line.me/v2/profile", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`LINE プロフィール取得に失敗しました: ${detail}`);
+  }
+
+  const data = (await res.json()) as {
+    userId: string;
+    displayName: string;
+    pictureUrl?: string;
+  };
+  return data;
+}

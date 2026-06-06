@@ -113,7 +113,7 @@ function LoginFormInner({ lineEnabled }: Props) {
               LINEでログイン
             </button>
             <p className="text-center text-nav-link text-apple-glyph">
-              LINEアカウントで認証します。初回は表示名でユーザー登録されます。
+              LINEアカウントで認証します。初回は自分の名前を選んで紐付けます。
             </p>
           </>
         ) : (
