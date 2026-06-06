@@ -8,6 +8,7 @@ import {
   YesNo,
 } from "./FormPrimitives";
 import { SiteSurveyPhotoEntries } from "@/components/site-survey/SiteSurveyPhotoEntries";
+import { VoiceInputTextarea } from "@/components/ui/VoiceInputTextarea";
 
 type Props = {
   projects: Project[];
@@ -534,31 +535,31 @@ export function SiteSurveyScrollForm({
 
           <div className="mt-2 grid grid-cols-2 border border-slate-800">
             <div className="border-r border-slate-800 p-2">
-              <p className="mb-1 font-medium">作業内容</p>
-              <textarea
-                className="min-h-[160px] w-full resize-y border border-slate-300 p-2 text-xs leading-relaxed"
+              <VoiceInputTextarea
+                header={<p className="font-medium">作業内容</p>}
                 value={content.workSteps.join("\n")}
-                onChange={(e) =>
+                onChange={(v) =>
                   setContent((c) => ({
                     ...c,
-                    workSteps: e.target.value.split("\n"),
+                    workSteps: v.split("\n"),
                   }))
                 }
                 placeholder="1行1項目"
+                textareaClassName="min-h-[160px] resize-y rounded-none border border-slate-300 p-2 text-xs leading-relaxed"
               />
             </div>
             <div className="p-2">
-              <p className="mb-1 font-medium">注意点（搬入、危険箇所等）</p>
-              <textarea
-                className="min-h-[160px] w-full resize-y border border-slate-300 p-2 text-xs leading-relaxed"
+              <VoiceInputTextarea
+                header={<p className="font-medium">注意点（搬入、危険箇所等）</p>}
                 value={content.precautions.join("\n")}
-                onChange={(e) =>
+                onChange={(v) =>
                   setContent((c) => ({
                     ...c,
-                    precautions: e.target.value.split("\n"),
+                    precautions: v.split("\n"),
                   }))
                 }
                 placeholder="1行1項目"
+                textareaClassName="min-h-[160px] resize-y rounded-none border border-slate-300 p-2 text-xs leading-relaxed"
               />
             </div>
           </div>

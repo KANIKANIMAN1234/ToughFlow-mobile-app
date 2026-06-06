@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { Textarea } from "@/components/ui/Textarea";
+import { VoiceInputTextarea } from "@/components/ui/VoiceInputTextarea";
 import { useSiteSurveyWizard } from "@/hooks/useSiteSurveyWizard";
 import { SiteSurveyPhotoEntries } from "@/components/site-survey/SiteSurveyPhotoEntries";
 import { cn } from "@/lib/utils";
@@ -202,24 +203,24 @@ export function SiteSurveyWizard() {
 
       {step === 3 && (
         <Card title="作業内容・注意点">
-          <Textarea
+          <VoiceInputTextarea
             label="作業内容（1行1項目）"
             value={content.workSteps.join("\n")}
-            onChange={(e) =>
+            onChange={(v) =>
               setContent((c) => ({
                 ...c,
-                workSteps: e.target.value.split("\n"),
+                workSteps: v.split("\n"),
               }))
             }
           />
-          <Textarea
+          <VoiceInputTextarea
             label="注意点"
             className="mt-3"
             value={content.precautions.join("\n")}
-            onChange={(e) =>
+            onChange={(v) =>
               setContent((c) => ({
                 ...c,
-                precautions: e.target.value.split("\n"),
+                precautions: v.split("\n"),
               }))
             }
           />

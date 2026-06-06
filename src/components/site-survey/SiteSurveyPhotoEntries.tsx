@@ -5,6 +5,7 @@ import {
   getSitePhotoEntries,
   syncSitePhotoEntries,
 } from "@/lib/site-survey/photos";
+import { VoiceInputTextarea } from "@/components/ui/VoiceInputTextarea";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -92,26 +93,28 @@ export function SiteSurveyPhotoEntries({
             )}
           </div>
           <div className="min-w-0">
-            <p
-              className={cn(
-                "mb-1 font-medium",
-                isPaper ? "text-[10px] text-slate-600" : "text-xs text-slate-500"
-              )}
-            >
-              説明
-            </p>
-            <textarea
+            <VoiceInputTextarea
+              header={
+                <p
+                  className={cn(
+                    "font-medium",
+                    isPaper ? "text-[10px] text-slate-600" : "text-xs text-slate-500"
+                  )}
+                >
+                  説明
+                </p>
+              }
               value={entry.caption}
-              onChange={(e) =>
+              onChange={(v) =>
                 updateEntries((list) => {
                   const next = [...list];
-                  next[index] = { ...next[index], caption: e.target.value };
+                  next[index] = { ...next[index], caption: v };
                   return next;
                 })
               }
               placeholder="撮影内容・箇所・注意点など"
-              className={cn(
-                "w-full resize-y border border-slate-300 p-2 leading-relaxed",
+              textareaClassName={cn(
+                "w-full resize-y rounded-none border border-slate-300 p-2 leading-relaxed",
                 isPaper
                   ? "min-h-[100px] text-[11px]"
                   : "min-h-[120px] rounded-lg text-sm"
