@@ -1,6 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatDbError } from "@/lib/db/errors";
-import { LineLinkRequiredError } from "@/lib/line/errors";
 import { resolveTenantByCodeForLine } from "@/lib/line/tenant";
 import type {
   DailyReport,
@@ -122,53 +121,11 @@ function toSessionUser(
   };
 }
 
-function matchDisplayName(displayName: string, userName: string) {
-  const dn = displayName.trim();
-  const un = userName.trim();
-  if (!dn || !un) return false;
-  if (dn === un) return true;
-  return dn.includes(un) || un.includes(dn);
-}
-
-async function linkLineUserId(
-  userId: string,
-  lineUserId: string,
-  tenant: { id: string; name: string }
-): Promise<User> {
-  const supabase = createAdminClient();
-
-  const { data: existing, error: existingError } = await supabase
-    .from("m_user")
-    .select("id")
-    .eq("tenant_id", tenant.id)
-    .eq("line_user_id", lineUserId)
-    .neq("id", userId)
-    .maybeSingle();
-
-  if (existingError) throw new Error(formatDbError(existingError.message));
-  if (existing) {
-    throw new Error("この LINE アカウントは別のユーザーに紐付け済みです");
-  }
-
-  const { data: updated, error: updateError } = await supabase
-    .from("m_user")
-    .update({ line_user_id: lineUserId })
-    .eq("id", userId)
-    .is("line_user_id", null)
-    .eq("is_active", true)
-    .select("id, name, role, tenant_id, is_active")
-    .single();
-
-  if (updateError) throw new Error(formatDbError(updateError.message));
-  return toSessionUser(updated, tenant);
-}
-
-/** LINE Login: line_user_id で m_user を特定（初回は displayName で自動紐付け） */
+/** LINE Login: line_user_id で特定。未登録なら m_user を自動作成（役職は管理者が後から設定） */
 export async function loginUserByLineId(
   tenantCode: string,
   lineUserId: string,
-  lineDisplayName?: string,
-  options?: { returnTo?: string }
+  lineDisplayName?: string
 ): Promise<User> {
   const supabase = createAdminClient();
   const tenant = await resolveTenantByCodeForLine(tenantCode);
@@ -184,79 +141,35 @@ export async function loginUserByLineId(
   if (linkedError) throw new Error(formatDbError(linkedError.message));
   if (linked) return toSessionUser(linked, tenant);
 
-  const displayName = lineDisplayName?.trim();
-  if (displayName) {
-    const { data: unlinked, error: unlinkedError } = await supabase
-      .from("m_user")
-      .select("id, name, role, tenant_id, is_active, line_user_id")
-      .eq("tenant_id", tenant.id)
-      .eq("is_active", true)
-      .is("line_user_id", null);
+  const name = lineDisplayName?.trim() || "ユーザー";
+  const { data: created, error: createError } = await supabase
+    .from("m_user")
+    .insert({
+      tenant_id: tenant.id,
+      line_user_id: lineUserId,
+      name,
+      role: "field",
+      is_active: true,
+    })
+    .select("id, name, role, tenant_id, is_active")
+    .single();
 
-    if (unlinkedError) throw new Error(formatDbError(unlinkedError.message));
-
-    const matched =
-      unlinked?.filter((u) => matchDisplayName(displayName, u.name)) ?? [];
-
-    if (matched.length === 1) {
-      return linkLineUserId(matched[0].id, lineUserId, tenant);
+  if (createError) {
+    if (createError.message.includes("duplicate") || createError.code === "23505") {
+      const { data: retry, error: retryError } = await supabase
+        .from("m_user")
+        .select("id, name, role, tenant_id, is_active")
+        .eq("tenant_id", tenant.id)
+        .eq("line_user_id", lineUserId)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (retryError) throw new Error(formatDbError(retryError.message));
+      if (retry) return toSessionUser(retry, tenant);
     }
+    throw new Error(formatDbError(createError.message));
   }
 
-  throw new LineLinkRequiredError({
-    lineUserId,
-    displayName: lineDisplayName,
-    tenantCode: tenantCode.trim().toUpperCase(),
-    returnTo: options?.returnTo,
-  });
-}
-
-export async function listUnlinkedUsers(tenantCode: string) {
-  const supabase = createAdminClient();
-  const tenant = await resolveTenantByCodeForLine(tenantCode);
-
-  const { data, error } = await supabase
-    .from("m_user")
-    .select("id, name, role")
-    .eq("tenant_id", tenant.id)
-    .eq("is_active", true)
-    .is("line_user_id", null)
-    .order("name");
-
-  if (error) throw new Error(formatDbError(error.message));
-  return {
-    tenantName: tenant.name,
-    users: (data ?? []).map((u) => ({
-      id: u.id,
-      name: u.name,
-      role: u.role as UserRole,
-    })),
-  };
-}
-
-export async function completeLineLink(
-  tenantCode: string,
-  lineUserId: string,
-  userId: string
-): Promise<User> {
-  const tenant = await resolveTenantByCodeForLine(tenantCode);
-  const supabase = createAdminClient();
-
-  const { data: target, error: targetError } = await supabase
-    .from("m_user")
-    .select("id, tenant_id, is_active, line_user_id")
-    .eq("id", userId)
-    .eq("tenant_id", tenant.id)
-    .eq("is_active", true)
-    .is("line_user_id", null)
-    .maybeSingle();
-
-  if (targetError) throw new Error(formatDbError(targetError.message));
-  if (!target) {
-    throw new Error("選択したユーザーは紐付けできません。管理者にお問い合わせください。");
-  }
-
-  return linkLineUserId(userId, lineUserId, tenant);
+  return toSessionUser(created, tenant);
 }
 
 export async function listProjects(

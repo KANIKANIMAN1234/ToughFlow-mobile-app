@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   clearLineOAuthCookie,
-  clearLinePendingLinkCookie,
   readLineOAuthState,
-  setLinePendingLinkCookie,
 } from "@/lib/auth/line-oauth";
 import { setSessionCookie } from "@/lib/auth/session";
 import { loginUserByLineId } from "@/lib/db/repository";
-import { LineLinkRequiredError } from "@/lib/line/errors";
 import {
   exchangeLineCode,
   fetchLineProfile,
@@ -20,7 +17,6 @@ function loginRedirect(request: NextRequest, message: string) {
   url.searchParams.set("error", message);
   const response = NextResponse.redirect(url);
   clearLineOAuthCookie(response);
-  clearLinePendingLinkCookie(response);
   return response;
 }
 
@@ -57,7 +53,7 @@ export async function GET(request: NextRequest) {
         const lineProfile = await fetchLineProfile(tokens.access_token);
         displayName = lineProfile.displayName;
       } catch {
-        // プロフィール API 失敗時は紐付け画面へ誘導
+        // 表示名なしでもユーザー自動作成は継続
       }
     }
 
@@ -66,28 +62,14 @@ export async function GET(request: NextRequest) {
     const user = await loginUserByLineId(
       oauth.tenantCode,
       profile.sub,
-      displayName,
-      { returnTo }
+      displayName
     );
 
     const response = NextResponse.redirect(new URL(returnTo, request.url));
     setSessionCookie(response, user);
     clearLineOAuthCookie(response);
-    clearLinePendingLinkCookie(response);
     return response;
   } catch (e) {
-    if (e instanceof LineLinkRequiredError) {
-      const response = NextResponse.redirect(new URL("/login/link", request.url));
-      setLinePendingLinkCookie(response, {
-        lineUserId: e.lineUserId,
-        displayName: e.displayName,
-        tenantCode: e.tenantCode,
-        returnTo: e.returnTo,
-      });
-      clearLineOAuthCookie(response);
-      return response;
-    }
-
     const raw = e instanceof Error ? e.message : "LINE ログインに失敗しました";
     return loginRedirect(request, toSupabaseUserMessage(raw));
   }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const LINE_OAUTH_COOKIE = "tf_line_oauth";
-export const LINE_PENDING_LINK_COOKIE = "tf_line_pending";
 
 export type LineOAuthState = {
   state: string;
@@ -35,44 +34,6 @@ export function setLineOAuthCookie(
 
 export function clearLineOAuthCookie(response: NextResponse) {
   response.cookies.set(LINE_OAUTH_COOKIE, "", {
-    httpOnly: true,
-    path: "/",
-    maxAge: 0,
-  });
-}
-
-export type LinePendingLink = {
-  lineUserId: string;
-  displayName?: string;
-  tenantCode: string;
-  returnTo?: string;
-};
-
-export function readLinePendingLink(request: NextRequest): LinePendingLink | null {
-  const raw = request.cookies.get(LINE_PENDING_LINK_COOKIE)?.value;
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as LinePendingLink;
-  } catch {
-    return null;
-  }
-}
-
-export function setLinePendingLinkCookie(
-  response: NextResponse,
-  payload: LinePendingLink
-) {
-  response.cookies.set(LINE_PENDING_LINK_COOKIE, JSON.stringify(payload), {
-    httpOnly: true,
-    path: "/",
-    maxAge: 60 * 15,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
-}
-
-export function clearLinePendingLinkCookie(response: NextResponse) {
-  response.cookies.set(LINE_PENDING_LINK_COOKIE, "", {
     httpOnly: true,
     path: "/",
     maxAge: 0,
