@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatDbError } from "@/lib/db/errors";
+import { resolveTenantByCodeForLine } from "@/lib/line/tenant";
 import type {
   DailyReport,
   DailyReportContent,
@@ -105,6 +106,70 @@ export async function loginUser(
     tenantId: tenant.id,
     tenantName: tenant.name,
   };
+}
+
+function toSessionUser(
+  dbUser: { id: string; name: string; role: string },
+  tenant: { id: string; name: string }
+): User {
+  return {
+    id: dbUser.id,
+    name: dbUser.name,
+    role: dbUser.role as UserRole,
+    tenantId: tenant.id,
+    tenantName: tenant.name,
+  };
+}
+
+/** LINE Login: line_user_id で m_user を特定（初回は displayName で自動紐付け） */
+export async function loginUserByLineId(
+  tenantCode: string,
+  lineUserId: string,
+  lineDisplayName?: string
+): Promise<User> {
+  const supabase = createAdminClient();
+  const tenant = await resolveTenantByCodeForLine(tenantCode);
+
+  const { data: linked, error: linkedError } = await supabase
+    .from("m_user")
+    .select("id, name, role, tenant_id, is_active, line_user_id")
+    .eq("tenant_id", tenant.id)
+    .eq("line_user_id", lineUserId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (linkedError) throw new Error(formatDbError(linkedError.message));
+  if (linked) return toSessionUser(linked, tenant);
+
+  const displayName = lineDisplayName?.trim();
+  if (displayName) {
+    const { data: candidates, error: candidateError } = await supabase
+      .from("m_user")
+      .select("id, name, role, tenant_id, is_active, line_user_id")
+      .eq("tenant_id", tenant.id)
+      .eq("name", displayName)
+      .eq("is_active", true)
+      .is("line_user_id", null);
+
+    if (candidateError) throw new Error(formatDbError(candidateError.message));
+
+    if (candidates?.length === 1) {
+      const target = candidates[0];
+      const { data: updated, error: updateError } = await supabase
+        .from("m_user")
+        .update({ line_user_id: lineUserId })
+        .eq("id", target.id)
+        .select("id, name, role, tenant_id, is_active")
+        .single();
+
+      if (updateError) throw new Error(formatDbError(updateError.message));
+      return toSessionUser(updated, tenant);
+    }
+  }
+
+  throw new Error(
+    "LINE アカウントが登録されていません。管理者にユーザー登録と紐付けを依頼してください。"
+  );
 }
 
 export async function listProjects(
