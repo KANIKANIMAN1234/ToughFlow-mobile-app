@@ -130,16 +130,30 @@ export async function loginUserByLineId(
   const supabase = createAdminClient();
   const tenant = await resolveTenantByCodeForLine(tenantCode);
 
-  const { data: linked, error: linkedError } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from("m_user")
     .select("id, name, role, tenant_id, is_active, line_user_id")
     .eq("tenant_id", tenant.id)
     .eq("line_user_id", lineUserId)
-    .eq("is_active", true)
     .maybeSingle();
 
-  if (linkedError) throw new Error(formatDbError(linkedError.message));
-  if (linked) return toSessionUser(linked, tenant);
+  if (existingError) throw new Error(formatDbError(existingError.message));
+
+  if (existing?.is_active) {
+    return toSessionUser(existing, tenant);
+  }
+
+  if (existing && !existing.is_active) {
+    const name = lineDisplayName?.trim() || existing.name;
+    const { data: reactivated, error: reactivateError } = await supabase
+      .from("m_user")
+      .update({ is_active: true, name })
+      .eq("id", existing.id)
+      .select("id, name, role, tenant_id, is_active")
+      .single();
+    if (reactivateError) throw new Error(formatDbError(reactivateError.message));
+    return toSessionUser(reactivated, tenant);
+  }
 
   const name = lineDisplayName?.trim() || "ユーザー";
   const { data: created, error: createError } = await supabase
