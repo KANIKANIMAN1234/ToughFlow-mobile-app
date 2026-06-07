@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
+  getPunchButtonClassName,
   PUNCH_BUTTONS,
   PUNCH_LABELS,
   STATE_LABELS,
@@ -65,12 +66,13 @@ export function AttendancePunchPanel({
             <Button
               key={type}
               fullWidth={layout === "grid"}
-              variant={enabled ? "primary" : "secondary"}
+              variant="ghost"
               disabled={!enabled}
               onClick={() => handlePunch(type)}
               className={cn(
                 layout === "grid" && "min-h-[4.5rem] text-lg",
-                !enabled && "opacity-50"
+                getPunchButtonClassName(type, enabled),
+                !enabled && "cursor-not-allowed opacity-70"
               )}
             >
               {submitting === type ? "打刻中…" : label}
