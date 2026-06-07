@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSiteSurvey, listSiteSurveys } from "@/lib/db/repository";
 import { uploadSiteSurveyPhotos } from "@/lib/google/site-survey-photos";
 import { generateAndStoreSiteSurveyPdf } from "@/lib/pdf/submit-site-survey-pdf";
-import { requireAnyPermission, requirePermission } from "@/lib/permissions/check";
+import { withAnyPermission, withPermission } from "@/lib/permissions/check";
 import type { SiteSurvey, SiteSurveyContent } from "@/lib/types";
 
 type CreateBody = {
@@ -50,60 +50,59 @@ async function parseCreateRequest(request: NextRequest): Promise<{
 }
 
 export async function GET(request: NextRequest) {
-  const auth = await requireAnyPermission(request, [
-    "site_survey_register",
-    "site_survey_view_shared",
-  ]);
-  if (auth instanceof Response) return auth;
-
-  const userId = request.nextUrl.searchParams.get("userId") ?? undefined;
-  try {
-    const surveys = await listSiteSurveys(auth.session.tenantId, userId);
-    return NextResponse.json({ surveys });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "取得に失敗しました";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  return withAnyPermission(
+    request,
+    ["site_survey_register", "site_survey_view_shared"],
+    async ({ session }) => {
+      const userId = request.nextUrl.searchParams.get("userId") ?? undefined;
+      try {
+        const surveys = await listSiteSurveys(session.tenantId, userId);
+        return NextResponse.json({ surveys });
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "取得に失敗しました";
+        return NextResponse.json({ error: message }, { status: 500 });
+      }
+    }
+  );
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requirePermission(request, "site_survey_register");
-  if (auth instanceof Response) return auth;
+  return withPermission(request, "site_survey_register", async ({ session }) => {
+    try {
+      const { body, photoFiles } = await parseCreateRequest(request);
+      const status = body.status ?? "draft";
 
-  try {
-    const { body, photoFiles } = await parseCreateRequest(request);
-    const status = body.status ?? "draft";
-
-    const { content, driveFileIds } = await uploadSiteSurveyPhotos(
-      auth.session.tenantId,
-      body.projectId,
-      body.content,
-      photoFiles
-    );
-
-    const survey = await createSiteSurvey(auth.session.tenantId, {
-      projectId: body.projectId,
-      userId: auth.session.id,
-      content,
-      status,
-      driveFileIds,
-    });
-
-    let pdfGenerated = false;
-    if (status === "published") {
-      const pdfResult = await generateAndStoreSiteSurveyPdf(
-        auth.session.tenantId,
-        survey
+      const { content, driveFileIds } = await uploadSiteSurveyPhotos(
+        session.tenantId,
+        body.projectId,
+        body.content,
+        photoFiles
       );
-      pdfGenerated = pdfResult.pdfGenerated;
-    }
 
-    return NextResponse.json(
-      { survey, driveFileIds, pdfGenerated },
-      { status: 201 }
-    );
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "登録に失敗しました";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+      const survey = await createSiteSurvey(session.tenantId, {
+        projectId: body.projectId,
+        userId: session.id,
+        content,
+        status,
+        driveFileIds,
+      });
+
+      let pdfGenerated = false;
+      if (status === "published") {
+        const pdfResult = await generateAndStoreSiteSurveyPdf(
+          session.tenantId,
+          survey
+        );
+        pdfGenerated = pdfResult.pdfGenerated;
+      }
+
+      return NextResponse.json(
+        { survey, driveFileIds, pdfGenerated },
+        { status: 201 }
+      );
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "登録に失敗しました";
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  });
 }

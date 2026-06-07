@@ -5,6 +5,7 @@ import {
   workDateJST,
 } from "@/lib/attendance/state";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getDbClient } from "@/lib/supabase/context";
 import { formatDbError } from "@/lib/db/errors";
 import { resolveTenantByCodeForLine } from "@/lib/line/tenant";
 import {
@@ -205,7 +206,7 @@ export async function listProjects(
   tenantId: string,
   options?: { userId?: string; role?: UserRole }
 ): Promise<Project[]> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   let assignedIds: string[] | null = null;
 
   if (options?.role === "field" && options.userId) {
@@ -236,7 +237,7 @@ export async function listProjects(
 export async function getDailyReportMasters(
   tenantId: string
 ): Promise<DailyReportMasters> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
 
   const [workTypes, vehicles, materials] = await Promise.all([
     supabase
@@ -284,7 +285,7 @@ export async function getDailyReportMasters(
 export async function getSiteSurveyMasters(
   tenantId: string
 ): Promise<SiteSurveyMasters> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
 
   const [workTypes, tools] = await Promise.all([
     supabase
@@ -315,7 +316,7 @@ export async function getSiteSurveyMasters(
 export async function listExpenseCategories(
   tenantId: string
 ): Promise<ExpenseCategory[]> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { data, error } = await supabase
     .from("m_expense_category")
     .select("*")
@@ -328,7 +329,7 @@ export async function listExpenseCategories(
 }
 
 export async function getCompanyInfo(tenantId: string): Promise<CompanyInfo> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { data, error } = await supabase
     .from("m_tenant")
     .select("name, company_info")
@@ -349,7 +350,7 @@ export async function updateDailyReportPdfRef(
   reportId: string,
   pdfRef: string
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { error } = await supabase
     .from("t_daily_report")
     .update({ report_pdf_drive_id: pdfRef })
@@ -388,7 +389,7 @@ export type ProjectDriveInfo = {
 export async function getFolderSettingsForDrive(
   tenantId: string
 ): Promise<FolderSettingsForDrive> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const [tenantRes, templateRes] = await Promise.all([
     supabase
       .from("m_tenant")
@@ -420,7 +421,7 @@ export async function getProjectDriveInfo(
   tenantId: string,
   projectId: string
 ): Promise<ProjectDriveInfo | null> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { data, error } = await supabase
     .from("m_project")
     .select(
@@ -456,7 +457,7 @@ export async function updateCustomerDriveFolderId(
   customerId: string,
   driveFolderId: string
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { error } = await supabase
     .from("m_customer")
     .update({ drive_folder_id: driveFolderId })
@@ -471,7 +472,7 @@ export async function updateProjectDriveFolderId(
   projectId: string,
   driveFolderId: string
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { error } = await supabase
     .from("m_project")
     .update({ drive_folder_id: driveFolderId })
@@ -486,7 +487,7 @@ export async function updateExpenseDriveFileId(
   expenseId: string,
   driveFileId: string
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { error } = await supabase
     .from("t_expense")
     .update({ drive_file_id: driveFileId })
@@ -497,7 +498,7 @@ export async function updateExpenseDriveFileId(
 }
 
 async function getProjectName(projectId: string): Promise<string> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { data } = await supabase
     .from("m_project")
     .select("name")
@@ -507,7 +508,7 @@ async function getProjectName(projectId: string): Promise<string> {
 }
 
 async function getUserName(userId: string): Promise<string> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { data } = await supabase
     .from("m_user")
     .select("name")
@@ -517,7 +518,7 @@ async function getUserName(userId: string): Promise<string> {
 }
 
 async function getCategoryName(categoryId: string): Promise<string> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { data } = await supabase
     .from("m_expense_category")
     .select("name")
@@ -530,7 +531,7 @@ export async function listDailyReports(
   tenantId: string,
   userId?: string
 ): Promise<DailyReport[]> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   let query = supabase
     .from("t_daily_report")
     .select(
@@ -574,7 +575,7 @@ export async function createDailyReport(
     status: DailyReport["status"];
   }
 ): Promise<DailyReport> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const now = new Date().toISOString();
   const submittedAt = input.status === "submitted" ? now : null;
 
@@ -617,7 +618,7 @@ export async function submitExpenseBatch(
   userId: string,
   expenseIds?: string[]
 ): Promise<number> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   let query = supabase
     .from("t_expense")
     .update({ status: "submitted" })
@@ -637,7 +638,7 @@ export async function getUserAccessMap(
   userId: string,
   role: UserRole
 ): Promise<Record<string, AccessLevel>> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const permissionCodes = Object.keys(DEFAULT_PERMISSION_MATRIX);
 
   const [{ data: userPerms }, { data: rolePerms }, { data: permDefs }] =
@@ -696,7 +697,7 @@ export async function getUserAccessMap(
 }
 
 export async function getPendingReminders(tenantId: string, userId: string) {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const [expensesRes, reportsRes] = await Promise.all([
     supabase
       .from("t_expense")
@@ -725,7 +726,7 @@ export async function getDailyReport(
   tenantId: string,
   id: string
 ): Promise<DailyReport | null> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { data, error } = await supabase
     .from("t_daily_report")
     .select(
@@ -767,7 +768,7 @@ export async function listExpenses(
     status?: Expense["status"];
   }
 ): Promise<Expense[]> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   let query = supabase
     .from("t_expense")
     .select(
@@ -818,7 +819,7 @@ export async function createExpense(
     "id" | "createdAt" | "projectName" | "userName" | "categoryName"
   >
 ): Promise<Expense> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { data, error } = await supabase
     .from("t_expense")
     .insert({
@@ -894,7 +895,7 @@ export async function listSiteSurveys(
   tenantId: string,
   userId?: string
 ): Promise<SiteSurvey[]> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   let query = supabase
     .from("t_site_survey")
     .select(
@@ -915,7 +916,7 @@ export async function getSiteSurvey(
   tenantId: string,
   id: string
 ): Promise<SiteSurvey | null> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { data, error } = await supabase
     .from("t_site_survey")
     .select(
@@ -935,7 +936,7 @@ export async function updateSiteSurveyPdfRef(
   surveyId: string,
   pdfRef: string
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { error } = await supabase
     .from("t_site_survey")
     .update({ report_pdf_drive_id: pdfRef })
@@ -955,7 +956,7 @@ export async function createSiteSurvey(
     driveFileIds?: string[];
   }
 ): Promise<SiteSurvey> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const publishedAt =
     input.status === "published" ? new Date().toISOString() : undefined;
   const checklist: ChecklistPayload = {
@@ -1023,7 +1024,7 @@ async function createDispatchDraftFromSurvey(
   const today = new Date().toISOString().slice(0, 10);
   if (workDate <= today) return;
 
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { error } = await supabase.from("t_dispatch").insert({
     tenant_id: tenantId,
     dispatch_date: workDate,
@@ -1068,7 +1069,7 @@ export async function listAttendancePunches(
   userId: string,
   workDate?: string
 ): Promise<AttendancePunch[]> {
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const date = workDate ?? workDateJST();
   const { data, error } = await supabase
     .from("t_attendance_punch")
@@ -1109,7 +1110,7 @@ export async function createAttendancePunch(
   const validationError = validatePunchTransition(existing, punchType);
   if (validationError) throw new Error(validationError);
 
-  const supabase = createAdminClient();
+  const supabase = getDbClient();
   const { error } = await supabase.from("t_attendance_punch").insert({
     tenant_id: tenantId,
     user_id: userId,
