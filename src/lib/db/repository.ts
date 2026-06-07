@@ -1,7 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatDbError } from "@/lib/db/errors";
 import { resolveTenantByCodeForLine } from "@/lib/line/tenant";
+import {
+  DEFAULT_PERMISSION_MATRIX,
+  FALLBACK_PERMISSIONS,
+} from "@/lib/permissions/defaults";
 import type {
+  AccessLevel,
   DailyReport,
   DailyReportContent,
   DailyReportMaterial,
@@ -446,6 +451,69 @@ export async function submitExpenseBatch(
   const { data, error } = await query.select("id");
   if (error) throw new Error(error.message);
   return data?.length ?? 0;
+}
+
+export async function getUserAccessMap(
+  tenantId: string,
+  userId: string,
+  role: UserRole
+): Promise<Record<string, AccessLevel>> {
+  const supabase = createAdminClient();
+  const permissionCodes = Object.keys(DEFAULT_PERMISSION_MATRIX);
+
+  const [{ data: userPerms }, { data: rolePerms }, { data: permDefs }] =
+    await Promise.all([
+      supabase
+        .from("m_user_permission")
+        .select("permission_id, access_level, m_permission(code)")
+        .eq("tenant_id", tenantId)
+        .eq("user_id", userId),
+      supabase
+        .from("m_role_permission")
+        .select("permission_id, access_level, m_permission(code)")
+        .eq("tenant_id", tenantId)
+        .eq("role", role),
+      supabase.from("m_permission").select("id, code"),
+    ]);
+
+  const codeById = new Map<string, string>();
+  for (const row of permDefs ?? []) {
+    codeById.set(row.id as string, row.code as string);
+  }
+  for (const fb of FALLBACK_PERMISSIONS) {
+    codeById.set(fb.id, fb.code);
+  }
+
+  const userOverrideByCode = new Map<string, AccessLevel>();
+  for (const row of userPerms ?? []) {
+    const perm = Array.isArray(row.m_permission)
+      ? row.m_permission[0]
+      : row.m_permission;
+    const code = (perm as { code?: string } | null)?.code;
+    if (code) userOverrideByCode.set(code, row.access_level as AccessLevel);
+  }
+
+  const roleOverrideByCode = new Map<string, AccessLevel>();
+  for (const row of rolePerms ?? []) {
+    const perm = Array.isArray(row.m_permission)
+      ? row.m_permission[0]
+      : row.m_permission;
+    const code = (perm as { code?: string } | null)?.code;
+    if (code) roleOverrideByCode.set(code, row.access_level as AccessLevel);
+  }
+
+  const access: Record<string, AccessLevel> = {};
+  for (const code of permissionCodes) {
+    if (userOverrideByCode.has(code)) {
+      access[code] = userOverrideByCode.get(code)!;
+    } else if (roleOverrideByCode.has(code)) {
+      access[code] = roleOverrideByCode.get(code)!;
+    } else {
+      access[code] = DEFAULT_PERMISSION_MATRIX[code]?.[role] ?? "deny";
+    }
+  }
+
+  return access;
 }
 
 export async function getPendingReminders(tenantId: string, userId: string) {

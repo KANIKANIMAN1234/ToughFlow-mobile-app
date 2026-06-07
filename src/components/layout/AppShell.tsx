@@ -3,40 +3,31 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ClipboardList,
-  FileText,
-  Home,
-  MapPin,
   Menu,
-  Receipt,
   X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDisplayMode } from "@/contexts/DisplayModeContext";
 import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
+import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
+import { filterNavByAccess, MOBILE_NAV_ITEMS } from "@/lib/permissions/nav";
 import { useState } from "react";
-
-const navItems = [
-  { href: "/home", label: "ホーム", icon: Home },
-  { href: "/expenses/new", label: "立替精算", icon: Receipt },
-  { href: "/daily-reports/new", label: "作業日報", icon: FileText },
-  { href: "/site-surveys/new", label: "現地調査", icon: MapPin },
-  { href: "/projects", label: "案件", icon: ClipboardList },
-];
 
 function NavLinks({
   pathname,
   onNavigate,
   className,
+  items,
 }: {
   pathname: string;
   onNavigate?: () => void;
   className?: string;
+  items: typeof MOBILE_NAV_ITEMS;
 }) {
   return (
     <>
-      {navItems.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const active = pathname.startsWith(href);
         return (
           <Link
@@ -60,13 +51,19 @@ function NavLinks({
   );
 }
 
-function NavTabs({ pathname }: { pathname: string }) {
+function NavTabs({
+  pathname,
+  items,
+}: {
+  pathname: string;
+  items: typeof MOBILE_NAV_ITEMS;
+}) {
   return (
     <nav
       aria-label="メインメニュー"
       className="flex shrink-0 gap-1 overflow-x-auto border-b border-surface-border bg-white px-4"
     >
-      {navItems.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const active = pathname.startsWith(href);
         return (
           <Link
@@ -98,7 +95,12 @@ export function AppShell({
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { isTablet } = useDisplayMode();
+  const { accessMap, loading: permLoading } = usePermissions();
   const [open, setOpen] = useState(false);
+
+  const visibleNav = permLoading
+    ? MOBILE_NAV_ITEMS.filter((item) => item.href === "/home")
+    : filterNavByAccess(MOBILE_NAV_ITEMS, accessMap);
 
   if (isTablet) {
     return (
@@ -118,7 +120,7 @@ export function AppShell({
           </button>
         </header>
 
-        <NavTabs pathname={pathname} />
+        <NavTabs pathname={pathname} items={visibleNav} />
 
         <main className="flex min-h-0 flex-1 flex-col">{children}</main>
       </div>
@@ -176,7 +178,11 @@ export function AppShell({
           </button>
         </div>
         <nav className="flex-1 p-3">
-          <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} />
+          <NavLinks
+            pathname={pathname}
+            onNavigate={() => setOpen(false)}
+            items={visibleNav}
+          />
         </nav>
         <div className="border-t border-surface-border p-4 text-nav-link text-apple-glyph">
           {user?.tenantName}

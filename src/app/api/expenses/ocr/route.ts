@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requirePermission } from "@/lib/permissions/check";
 
 export async function POST(request: NextRequest) {
+  const auth = await requirePermission(request, "expense_register");
+  if (auth instanceof Response) return auth;
+
   const form = await request.formData();
   const file = form.get("file");
 

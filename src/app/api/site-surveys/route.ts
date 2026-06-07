@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSiteSurvey, listSiteSurveys } from "@/lib/db/repository";
-import {
-  getSessionFromRequest,
-  unauthorizedResponse,
-} from "@/lib/auth/session";
+import { requireAnyPermission, requirePermission } from "@/lib/permissions/check";
 import type { SiteSurvey, SiteSurveyContent } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
-  const session = getSessionFromRequest(request);
-  if (!session) return unauthorizedResponse();
+  const auth = await requireAnyPermission(request, [
+    "site_survey_register",
+    "site_survey_view_shared",
+  ]);
+  if (auth instanceof Response) return auth;
 
   const userId = request.nextUrl.searchParams.get("userId") ?? undefined;
   try {
-    const surveys = await listSiteSurveys(session.tenantId, userId);
+    const surveys = await listSiteSurveys(auth.session.tenantId, userId);
     return NextResponse.json({ surveys });
   } catch (e) {
     const message = e instanceof Error ? e.message : "取得に失敗しました";
@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = getSessionFromRequest(request);
-  if (!session) return unauthorizedResponse();
+  const auth = await requirePermission(request, "site_survey_register");
+  if (auth instanceof Response) return auth;
 
   try {
     const body = await request.json();
@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
       status?: SiteSurvey["status"];
     };
 
-    const survey = await createSiteSurvey(session.tenantId, {
+    const survey = await createSiteSurvey(auth.session.tenantId, {
       projectId,
-      userId: session.id,
+      userId: auth.session.id,
       content,
       status,
     });

@@ -1,4 +1,6 @@
-export type UserRole = "admin" | "office" | "manager" | "field";
+export type UserRole = "admin" | "office" | "manager" | "field" | "partner";
+
+export type AccessLevel = "allow" | "conditional" | "deny";
 
 export interface User {
   id: string;
@@ -44,6 +46,7 @@ export interface Project {
   deliveryAddress: string;
   billingClient: string;
   clientContact?: string;
+  salesAmount?: number;
   status: "active" | "completed";
 }
 

@@ -2,48 +2,51 @@
 
 戸塚重量向け **ToughFlow** の現場用モバイル Web アプリ（Next.js App Router）。
 
-P1 機能（SC-001, SC-010, SC-020, SC-030, SC-040, SC-050）に対応した UI 実装です。
+P1 機能（SC-001, SC-010, SC-020, SC-030, SC-040, SC-050）に対応。
 
 ## 表示モード（NFR-009）
 
-Top バーの **スマホ / iPad** トグルで UI を切り替えます（`localStorage` に保存）。
+Top バーの **スマホ / iPad** トグルで UI を切り替えます（`localStorage` に表示モードのみ保存）。
 
 | モード | シェル | 作業日報 | 現地調査 |
 |--------|--------|----------|----------|
-| スマホ | 480px・ドロワーメニュー | `DailyReportWizard`（現行） | `SiteSurveyWizard`（現行） |
-| iPad | Top タブナビ・全幅 | `DailyReportScrollForm`（原紙1枚・縦スクロール） | `SiteSurveyScrollForm`（原紙2枚・縦スクロール） |
+| スマホ | 480px・ドロワーメニュー | `DailyReportWizard` | `SiteSurveyWizard` |
+| iPad | Top タブナビ・全幅 | `DailyReportScrollForm` | `SiteSurveyScrollForm` |
 
 ## 技術スタック
 
 - Next.js 15（App Router）
 - React 19 / TypeScript
 - Tailwind CSS（モバイルファースト、max-width 480px）
-- デモ API（localStorage + Route Handlers）
+- Supabase PostgreSQL（`repository` 層経由）
+- LINE Login（本番 OAuth）
+- SWR キャッシュ
 
 ## 画面一覧
 
 | パス | 画面 | 仕様 |
 |------|------|------|
-| `/login` | ログイン | SC-001（デモ: 会社コード + 名前） |
-| `/home` | ホーム | SC-010 |
+| `/login` | ログイン | SC-001（LINE Login / 開発用デモ） |
+| `/home` | ホーム | SC-010（未提出リマインド） |
 | `/expenses/new` | 立替精算登録 | SC-020（OCR デモ） |
 | `/expenses` | 立替精算一覧 | SC-021 |
-| `/daily-reports/new` | 作業日報入力（6ステップ） | SC-030 |
+| `/daily-reports/new` | 作業日報入力 | SC-030 |
 | `/daily-reports` | 作業日報一覧 | SC-031 |
 | `/site-surveys/new` | 現地調査入力 | SC-040 |
 | `/site-surveys` | 現地調査一覧 | — |
 | `/projects` | 案件一覧 | SC-050 |
 
-## マスタ（seed）
+## 認証
 
-テナントマスタ（REQ-115）の初期値を API から返却します。
+| 方式 | 条件 |
+|------|------|
+| LINE Login | 環境変数設定時（本番） |
+| デモログイン | LINE 未設定時（会社コード + 現場従業員選択） |
 
-- **M1** 作業種別 9種（原紙 IMG_5182）
-- **M2** 車両・重機 15種
-- **M3** 資材 7行
-- **M4** 現地調査作業種別 3種
-- **M5** 必要道具 19種
-- **M7** 経費科目
+## 権限
+
+- ナビゲーションは権限矩阵に基づき表示（`partner` は現地調査閲覧のみ等）
+- API はロール矩阵 + 個人上書きを反映して 403 を返却
 
 ## セットアップ
 
@@ -51,23 +54,24 @@ Top バーの **スマホ / iPad** トグルで UI を切り替えます（`loca
 git clone https://github.com/KANIKANIMAN1234/ToughFlow-mobile-app.git
 cd ToughFlow-mobile-app
 cp .env.example .env.local
-pnpm install   # npm でエラーが出る場合は pnpm を使用
+# .env.local に Supabase / LINE の値を設定
+pnpm install
 pnpm dev
 ```
 
-ブラウザで http://localhost:3000 を開き、会社コード `TOTSUKA` でログイン。
+http://localhost:3000
 
-## 本番連携（今後）
+## 環境変数
 
-| 項目 | 対応 |
-|------|------|
-| 認証 | LINE Login + Supabase Auth |
-| DB | Supabase PostgreSQL（RLS） |
-| OCR | OpenAI Vision API |
-| ファイル | Google Drive API |
-| デプロイ | Vercel |
-
-環境変数は `.env.example` を参照してください。
+| 変数 | 必須 | 説明 |
+|------|:----:|------|
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Supabase プロジェクト URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | anon キー |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | サーバー側 DB アクセス |
+| `LINE_CHANNEL_ID` | 本番 | LINE Login |
+| `LINE_CHANNEL_SECRET` | 本番 | LINE Login |
+| `LINE_CALLBACK_URL` | 本番 | OAuth コールバック URL |
+| `OPENAI_API_KEY` | 将来 | OCR・音声整形（未連携） |
 
 ## ディレクトリ構成
 
@@ -76,12 +80,12 @@ src/
 ├── app/              # ページ・API Routes
 ├── components/       # UI・ウィザード（phone / iPad 版）
 ├── contexts/         # 認証・表示モード
-├── hooks/            # 日報・現地調査ウィザード共通ロジック
-└── lib/
-    ├── api/          # fetch ラッパ
-    ├── seed/         # マスタ seed
-    ├── store/        # デモ用ストア
-    └── types/        # 型定義
+├── hooks/            # ウィザード・権限・API
+├── lib/
+│   ├── db/           # repository（Supabase）
+│   ├── line/         # LINE OAuth
+│   ├── permissions/  # 権限矩阵・チェック
+│   └── types/        # 共通型定義
 ```
 
 ## 開発コマンド

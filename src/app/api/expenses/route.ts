@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createExpense, listExpenses } from "@/lib/db/repository";
-import {
-  getSessionFromRequest,
-  unauthorizedResponse,
-} from "@/lib/auth/session";
+import { requirePermission } from "@/lib/permissions/check";
 import type { Expense } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
-  const session = getSessionFromRequest(request);
-  if (!session) return unauthorizedResponse();
+  const auth = await requirePermission(request, "expense_register");
+  if (auth instanceof Response) return auth;
 
   const { searchParams } = request.nextUrl;
   try {
-    const expenses = await listExpenses(session.tenantId, {
+    const expenses = await listExpenses(auth.session.tenantId, {
       userId: searchParams.get("userId") ?? undefined,
       projectId: searchParams.get("projectId") ?? undefined,
       expenseDate: searchParams.get("expenseDate") ?? undefined,
@@ -25,14 +22,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = getSessionFromRequest(request);
-  if (!session) return unauthorizedResponse();
+  const auth = await requirePermission(request, "expense_register");
+  if (auth instanceof Response) return auth;
 
   try {
     const body = await request.json();
-    const expense = await createExpense(session.tenantId, {
+    const expense = await createExpense(auth.session.tenantId, {
       projectId: body.projectId,
-      userId: session.id,
+      userId: auth.session.id,
       amount: Number(body.amount),
       categoryId: body.categoryId,
       expenseDate: body.expenseDate,

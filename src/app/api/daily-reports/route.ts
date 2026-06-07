@@ -4,15 +4,13 @@ import {
   getDailyReport,
   listDailyReports,
 } from "@/lib/db/repository";
-import {
-  getSessionFromRequest,
-  unauthorizedResponse,
-} from "@/lib/auth/session";
+import { requirePermission } from "@/lib/permissions/check";
 import type { DailyReport, DailyReportContent } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
-  const session = getSessionFromRequest(request);
-  if (!session) return unauthorizedResponse();
+  const auth = await requirePermission(request, "daily_report_register");
+  if (auth instanceof Response) return auth;
+  const session = auth.session;
 
   const { searchParams } = request.nextUrl;
   const id = searchParams.get("id");
@@ -36,8 +34,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = getSessionFromRequest(request);
-  if (!session) return unauthorizedResponse();
+  const auth = await requirePermission(request, "daily_report_register");
+  if (auth instanceof Response) return auth;
+  const session = auth.session;
 
   try {
     const body = await request.json();
