@@ -6,7 +6,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api/client";
+import { submitSiteSurvey } from "@/lib/site-survey/submit";
 import {
   clearPreviewState,
   loadPreviewState,
@@ -33,11 +33,8 @@ export default function SiteSurveyPreviewPage() {
     if (!user || !state) return;
     setSubmitting(true);
     try {
-      await api.post("/api/site-surveys", {
+      await submitSiteSurvey({
         projectId: state.projectId,
-        projectName: state.projectName,
-        userId: user.id,
-        userName: user.name,
         content: state.content,
         status: publish ? "published" : "draft",
       });

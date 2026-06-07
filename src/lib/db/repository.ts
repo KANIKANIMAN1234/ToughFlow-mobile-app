@@ -359,6 +359,143 @@ export async function updateDailyReportPdfRef(
   if (error) throw new Error(error.message);
 }
 
+const DEFAULT_SUBFOLDERS = [
+  "経費",
+  "日報",
+  "現地調査",
+  "報告書",
+  "見積",
+  "作業完了報告",
+  "請求",
+];
+
+export type FolderSettingsForDrive = {
+  driveRootFolderId: string;
+  projectNamePattern: string;
+  subfolderNames: string[];
+};
+
+export type ProjectDriveInfo = {
+  projectId: string;
+  projectName: string;
+  projectDriveFolderId: string | null;
+  workStartDate: string | null;
+  customerId: string | null;
+  customerName: string;
+  customerDriveFolderId: string | null;
+};
+
+export async function getFolderSettingsForDrive(
+  tenantId: string
+): Promise<FolderSettingsForDrive> {
+  const supabase = createAdminClient();
+  const [tenantRes, templateRes] = await Promise.all([
+    supabase
+      .from("m_tenant")
+      .select("drive_root_folder_id")
+      .eq("id", tenantId)
+      .maybeSingle(),
+    supabase
+      .from("m_folder_template")
+      .select("subfolder_names, project_name_pattern")
+      .eq("tenant_id", tenantId)
+      .maybeSingle(),
+  ]);
+
+  if (tenantRes.error) throw new Error(tenantRes.error.message);
+  if (templateRes.error) throw new Error(templateRes.error.message);
+
+  const subfolders = templateRes.data?.subfolder_names;
+  return {
+    driveRootFolderId: tenantRes.data?.drive_root_folder_id ?? "",
+    projectNamePattern:
+      templateRes.data?.project_name_pattern ?? "{date}_{name}",
+    subfolderNames: Array.isArray(subfolders)
+      ? (subfolders as string[])
+      : DEFAULT_SUBFOLDERS,
+  };
+}
+
+export async function getProjectDriveInfo(
+  tenantId: string,
+  projectId: string
+): Promise<ProjectDriveInfo | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("m_project")
+    .select(
+      "id, name, drive_folder_id, work_start_date, customer_id, m_customer(id, name, drive_folder_id)"
+    )
+    .eq("tenant_id", tenantId)
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  const customer = unwrapJoin(
+    data.m_customer as
+      | { id: string; name: string; drive_folder_id: string | null }
+      | { id: string; name: string; drive_folder_id: string | null }[]
+      | null
+  );
+
+  return {
+    projectId: data.id,
+    projectName: data.name,
+    projectDriveFolderId: data.drive_folder_id,
+    workStartDate: data.work_start_date,
+    customerId: data.customer_id,
+    customerName: customer?.name ?? "未分類",
+    customerDriveFolderId: customer?.drive_folder_id ?? null,
+  };
+}
+
+export async function updateCustomerDriveFolderId(
+  tenantId: string,
+  customerId: string,
+  driveFolderId: string
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("m_customer")
+    .update({ drive_folder_id: driveFolderId })
+    .eq("tenant_id", tenantId)
+    .eq("id", customerId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function updateProjectDriveFolderId(
+  tenantId: string,
+  projectId: string,
+  driveFolderId: string
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("m_project")
+    .update({ drive_folder_id: driveFolderId })
+    .eq("tenant_id", tenantId)
+    .eq("id", projectId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function updateExpenseDriveFileId(
+  tenantId: string,
+  expenseId: string,
+  driveFileId: string
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("t_expense")
+    .update({ drive_file_id: driveFileId })
+    .eq("tenant_id", tenantId)
+    .eq("id", expenseId);
+
+  if (error) throw new Error(error.message);
+}
+
 async function getProjectName(projectId: string): Promise<string> {
   const supabase = createAdminClient();
   const { data } = await supabase
@@ -781,6 +918,7 @@ export async function createSiteSurvey(
     userId: string;
     content: SiteSurveyContent;
     status: SiteSurvey["status"];
+    driveFileIds?: string[];
   }
 ): Promise<SiteSurvey> {
   const supabase = createAdminClient();
@@ -799,6 +937,7 @@ export async function createSiteSurvey(
       user_id: input.userId,
       survey_date: input.content.surveyDate || new Date().toISOString(),
       checklist,
+      drive_file_ids: input.driveFileIds ?? [],
       shared_to_partner: input.status === "published",
       shared_at: publishedAt ?? null,
     })

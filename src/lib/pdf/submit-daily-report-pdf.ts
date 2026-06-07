@@ -1,7 +1,9 @@
 import { updateDailyReportPdfRef } from "@/lib/db/repository";
+import { isDriveConfigured } from "@/lib/google/client";
+import { uploadDailyReportPdf as uploadDailyReportPdfToDrive } from "@/lib/google/uploads";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { DailyReport } from "@/lib/types";
-import { buildDailyReportPdfContext } from "./daily-report-context";
+import { buildDailyReportPdfContext, buildPdfFilename } from "./daily-report-context";
 import { renderDailyReportPdf } from "./render-daily-report-pdf";
 
 const PDF_BUCKET = "report-pdfs";
@@ -24,11 +26,25 @@ async function uploadDailyReportPdf(
 export async function generateAndStoreDailyReportPdf(
   tenantId: string,
   report: DailyReport
-): Promise<{ pdfGenerated: boolean; storagePath?: string }> {
+): Promise<{ pdfGenerated: boolean; driveFileId?: string; storagePath?: string }> {
   const ctx = await buildDailyReportPdfContext(tenantId, report);
   const pdf = await renderDailyReportPdf(ctx);
-  const storagePath = await uploadDailyReportPdf(tenantId, report.id, pdf);
+  const filename = buildPdfFilename(report);
 
+  if (isDriveConfigured()) {
+    const driveFileId = await uploadDailyReportPdfToDrive(
+      tenantId,
+      report.projectId,
+      report.id,
+      filename,
+      pdf
+    );
+    if (driveFileId) {
+      return { pdfGenerated: true, driveFileId };
+    }
+  }
+
+  const storagePath = await uploadDailyReportPdf(tenantId, report.id, pdf);
   if (storagePath) {
     await updateDailyReportPdfRef(tenantId, report.id, `storage:${storagePath}`);
     return { pdfGenerated: true, storagePath };

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api/client";
+import { submitSiteSurvey } from "@/lib/site-survey/submit";
 import type {
   Project,
   SiteSurveyContent,
@@ -90,11 +91,8 @@ export function useSiteSurveyWizard() {
     if (!user || !selectedProject) return;
     setSubmitting(true);
     try {
-      await api.post("/api/site-surveys", {
+      await submitSiteSurvey({
         projectId: selectedProject.id,
-        projectName: selectedProject.name,
-        userId: user.id,
-        userName: user.name,
         content,
         status: publish ? "published" : "draft",
       });

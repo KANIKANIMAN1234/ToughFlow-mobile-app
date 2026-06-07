@@ -23,6 +23,8 @@ export function ExpenseForm() {
   const [expenseDate, setExpenseDate] = useState(todayISO());
   const [memo, setMemo] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [inputMethod, setInputMethod] = useState<"manual" | "ocr" | "ocr_edited">(
     "manual"
   );
@@ -43,6 +45,9 @@ export function ExpenseForm() {
   }, []);
 
   async function handleOcr(file: File) {
+    setReceiptFile(file);
+    if (receiptPreview) URL.revokeObjectURL(receiptPreview);
+    setReceiptPreview(URL.createObjectURL(file));
     setOcrLoading(true);
     try {
       const form = new FormData();
@@ -76,7 +81,7 @@ export function ExpenseForm() {
 
     setSubmitting(true);
     try {
-      await api.post("/api/expenses", {
+      const payload = {
         projectId,
         projectName: project.name,
         userId: user.id,
@@ -88,7 +93,24 @@ export function ExpenseForm() {
         memo,
         inputMethod,
         status,
-      });
+      };
+
+      if (receiptFile) {
+        const form = new FormData();
+        form.append("payload", JSON.stringify(payload));
+        form.append("receipt", receiptFile);
+        const res = await fetch("/api/expenses", {
+          method: "POST",
+          body: form,
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error ?? "登録に失敗しました");
+        }
+      } else {
+        await api.post("/api/expenses", payload);
+      }
       router.push("/expenses");
     } finally {
       setSubmitting(false);
@@ -118,6 +140,14 @@ export function ExpenseForm() {
             }}
           />
         </label>
+        {receiptPreview && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={receiptPreview}
+            alt="領収書プレビュー"
+            className="mt-3 max-h-40 w-full rounded-lg object-contain"
+          />
+        )}
         {inputMethod.startsWith("ocr") && (
           <p className="mt-2 text-xs text-green-700">
             OCR 結果を反映しました。内容を確認してください。
