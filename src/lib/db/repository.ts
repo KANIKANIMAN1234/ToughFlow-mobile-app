@@ -239,7 +239,7 @@ export async function listProjects(
 export async function getDailyReportMasters(
   tenantId: string
 ): Promise<DailyReportMasters> {
-  const supabase = getDbClient();
+  const supabase = createAdminClient();
 
   const [workTypes, vehicles, materials] = await Promise.all([
     supabase
@@ -287,7 +287,7 @@ export async function getDailyReportMasters(
 export async function getSiteSurveyMasters(
   tenantId: string
 ): Promise<SiteSurveyMasters> {
-  const supabase = getDbClient();
+  const supabase = createAdminClient();
 
   const [workTypes, tools] = await Promise.all([
     supabase

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { Textarea } from "@/components/ui/Textarea";
 import { useDailyReportWizard } from "@/hooks/useDailyReportWizard";
+import { WizardLoadState } from "@/components/ui/WizardLoadState";
 import { circleNumber, cn } from "@/lib/utils";
 
 const STEPS = ["基本", "作業", "車両", "資材", "備考", "時間"];
@@ -17,6 +18,8 @@ export function DailyReportWizard() {
     setStep,
     projects,
     masters,
+    mastersLoading,
+    mastersError,
     projectId,
     selectProject,
     submitting,
@@ -33,9 +36,12 @@ export function DailyReportWizard() {
 
   if (!masters) {
     return (
-      <AppShell title="作業日報">
-        <p className="text-center text-apple-glyph">読み込み中…</p>
-      </AppShell>
+      <WizardLoadState
+        title="作業日報"
+        loading={mastersLoading}
+        error={mastersError}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 

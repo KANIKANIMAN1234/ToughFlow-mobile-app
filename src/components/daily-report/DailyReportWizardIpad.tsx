@@ -4,11 +4,14 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { DailyReportScrollForm } from "@/components/daily-report/ipad/DailyReportScrollForm";
 import { useDailyReportWizard } from "@/hooks/useDailyReportWizard";
+import { WizardLoadState } from "@/components/ui/WizardLoadState";
 
 export function DailyReportWizardIpad() {
   const {
     projects,
     masters,
+    mastersLoading,
+    mastersError,
     projectId,
     selectProject,
     submitting,
@@ -25,9 +28,12 @@ export function DailyReportWizardIpad() {
 
   if (!masters) {
     return (
-      <AppShell title="作業日報">
-        <p className="p-6 text-center text-apple-glyph">読み込み中…</p>
-      </AppShell>
+      <WizardLoadState
+        title="作業日報"
+        loading={mastersLoading}
+        error={mastersError}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 

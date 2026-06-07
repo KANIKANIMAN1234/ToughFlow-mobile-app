@@ -8,6 +8,7 @@ import { StepIndicator } from "@/components/ui/StepIndicator";
 import { Textarea } from "@/components/ui/Textarea";
 import { VoiceInputTextarea } from "@/components/ui/VoiceInputTextarea";
 import { useSiteSurveyWizard } from "@/hooks/useSiteSurveyWizard";
+import { WizardLoadState } from "@/components/ui/WizardLoadState";
 import { SiteSurveyPhotoEntries } from "@/components/site-survey/SiteSurveyPhotoEntries";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,8 @@ export function SiteSurveyWizard() {
     setStep,
     projects,
     masters,
+    mastersLoading,
+    mastersError,
     projectId,
     selectProject,
     submitting,
@@ -30,9 +33,12 @@ export function SiteSurveyWizard() {
 
   if (!masters) {
     return (
-      <AppShell title="現地調査">
-        <p className="text-center text-apple-glyph">読み込み中…</p>
-      </AppShell>
+      <WizardLoadState
+        title="現地調査"
+        loading={mastersLoading}
+        error={mastersError}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 

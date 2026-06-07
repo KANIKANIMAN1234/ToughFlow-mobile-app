@@ -22,6 +22,8 @@ export function useSiteSurveyWizard() {
   const [step, setStep] = useState(1);
   const [projects, setProjects] = useState<Project[]>([]);
   const [masters, setMasters] = useState<SiteSurveyMasters | null>(null);
+  const [mastersLoading, setMastersLoading] = useState(true);
+  const [mastersError, setMastersError] = useState<string | null>(null);
   const [projectId, setProjectId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [content, setContent] = useState<SiteSurveyContent>(() => ({
@@ -46,32 +48,51 @@ export function useSiteSurveyWizard() {
   }));
 
   useEffect(() => {
+    let cancelled = false;
+    setMastersLoading(true);
+    setMastersError(null);
+
     Promise.all([
       api.get<{ projects: Project[] }>("/api/projects"),
       api.get<SiteSurveyMasters>("/api/masters/site-survey"),
-    ]).then(([p, m]) => {
-      setProjects(p.projects);
-      setMasters(m);
-      const tools: SiteSurveyToolCheck[] = m.tools.map((t) => ({
-        toolId: t.id,
-        name: t.name,
-        load: false,
-        use: false,
-      }));
-      if (p.projects[0]) {
-        setProjectId(p.projects[0].id);
-        setContent((c) => ({
-          ...c,
-          customerName: p.projects[0].customerName,
-          siteAddress: p.projects[0].siteAddress,
-          surveyorName: user?.name ?? "",
-          workTypeId: m.workTypes[0]?.id ?? "",
-          tools,
+    ])
+      .then(([p, m]) => {
+        if (cancelled) return;
+        setProjects(p.projects);
+        setMasters(m);
+        const tools: SiteSurveyToolCheck[] = m.tools.map((t) => ({
+          toolId: t.id,
+          name: t.name,
+          load: false,
+          use: false,
         }));
-      } else {
-        setContent((c) => ({ ...c, tools }));
-      }
-    });
+        if (p.projects[0]) {
+          setProjectId(p.projects[0].id);
+          setContent((c) => ({
+            ...c,
+            customerName: p.projects[0].customerName,
+            siteAddress: p.projects[0].siteAddress,
+            surveyorName: user?.name ?? "",
+            workTypeId: m.workTypes[0]?.id ?? "",
+            tools,
+          }));
+        } else {
+          setContent((c) => ({ ...c, tools }));
+        }
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setMastersError(
+          e instanceof Error ? e.message : "データの読み込みに失敗しました"
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setMastersLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.name]);
 
   const selectedProject = projects.find((p) => p.id === projectId);
@@ -117,6 +138,8 @@ export function useSiteSurveyWizard() {
     setStep,
     projects,
     masters,
+    mastersLoading,
+    mastersError,
     projectId,
     selectProject,
     submitting,

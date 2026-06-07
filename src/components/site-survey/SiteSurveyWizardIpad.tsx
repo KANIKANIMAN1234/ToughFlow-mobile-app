@@ -4,11 +4,14 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { SiteSurveyScrollForm } from "@/components/site-survey/ipad/SiteSurveyScrollForm";
 import { useSiteSurveyWizard } from "@/hooks/useSiteSurveyWizard";
+import { WizardLoadState } from "@/components/ui/WizardLoadState";
 
 export function SiteSurveyWizardIpad() {
   const {
     projects,
     masters,
+    mastersLoading,
+    mastersError,
     projectId,
     selectProject,
     submitting,
@@ -20,9 +23,12 @@ export function SiteSurveyWizardIpad() {
 
   if (!masters) {
     return (
-      <AppShell title="現地調査">
-        <p className="p-6 text-center text-apple-glyph">読み込み中…</p>
-      </AppShell>
+      <WizardLoadState
+        title="現地調査"
+        loading={mastersLoading}
+        error={mastersError}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 

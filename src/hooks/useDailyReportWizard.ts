@@ -39,6 +39,8 @@ export function useDailyReportWizard() {
   const [step, setStep] = useState(1);
   const [projects, setProjects] = useState<Project[]>([]);
   const [masters, setMasters] = useState<DailyReportMasters | null>(null);
+  const [mastersLoading, setMastersLoading] = useState(true);
+  const [mastersError, setMastersError] = useState<string | null>(null);
   const [projectId, setProjectId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [content, setContent] = useState<DailyReportContent>(() => ({
@@ -62,26 +64,45 @@ export function useDailyReportWizard() {
   }));
 
   useEffect(() => {
+    let cancelled = false;
+    setMastersLoading(true);
+    setMastersError(null);
+
     Promise.all([
       api.get<{ projects: Project[] }>("/api/projects"),
       api.get<DailyReportMasters>("/api/masters/daily-report"),
-    ]).then(([p, m]) => {
-      setProjects(p.projects);
-      setMasters(m);
-      if (p.projects[0]) {
-        setProjectId(p.projects[0].id);
-        const proj = p.projects[0];
-        setContent((c) => ({
-          ...c,
-          billingClient: proj.billingClient,
-          clientContact: proj.clientContact ?? "",
-          delivery: {
-            address: proj.deliveryAddress,
-            company: proj.deliveryCompany,
-          },
-        }));
-      }
-    });
+    ])
+      .then(([p, m]) => {
+        if (cancelled) return;
+        setProjects(p.projects);
+        setMasters(m);
+        if (p.projects[0]) {
+          setProjectId(p.projects[0].id);
+          const proj = p.projects[0];
+          setContent((c) => ({
+            ...c,
+            billingClient: proj.billingClient,
+            clientContact: proj.clientContact ?? "",
+            delivery: {
+              address: proj.deliveryAddress,
+              company: proj.deliveryCompany,
+            },
+          }));
+        }
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setMastersError(
+          e instanceof Error ? e.message : "データの読み込みに失敗しました"
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setMastersLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   /** 担当 = LINEログイン（認証）ユーザーの氏名 */
@@ -250,6 +271,8 @@ export function useDailyReportWizard() {
     setStep,
     projects,
     masters,
+    mastersLoading,
+    mastersError,
     projectId,
     selectProject,
     submitting,
