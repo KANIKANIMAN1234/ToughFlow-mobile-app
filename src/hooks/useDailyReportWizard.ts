@@ -195,6 +195,38 @@ export function useDailyReportWizard() {
     }));
   }
 
+  function buildSubmitContent() {
+    return {
+      ...content,
+      reporterName: user?.name ?? content.reporterName,
+      costs: {
+        ...content.costs,
+        total: calcDailyReportTotalCosts(content.costs),
+      },
+    };
+  }
+
+  async function openPreview() {
+    if (!user || !selectedProject) return;
+    const res = await fetch("/api/daily-reports/preview", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectId: selectedProject.id,
+        projectName: selectedProject.name,
+        content: buildSubmitContent(),
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? "プレビュー生成に失敗しました");
+    }
+    const html = await res.text();
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    window.open(URL.createObjectURL(blob), "_blank", "noopener,noreferrer");
+  }
+
   async function handleSubmit() {
     if (!user || !selectedProject) return;
     setSubmitting(true);
@@ -204,14 +236,7 @@ export function useDailyReportWizard() {
         projectName: selectedProject.name,
         userId: user.id,
         userName: user.name,
-        content: {
-          ...content,
-          reporterName: user.name,
-          costs: {
-            ...content.costs,
-            total: calcDailyReportTotalCosts(content.costs),
-          },
-        },
+        content: buildSubmitContent(),
         status: "submitted",
       });
       router.push("/daily-reports");
@@ -237,6 +262,7 @@ export function useDailyReportWizard() {
     setMaterialValue,
     getMaterialValue,
     addMachineRow,
+    openPreview,
     handleSubmit,
     emptyMachine,
   };

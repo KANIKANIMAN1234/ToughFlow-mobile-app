@@ -116,6 +116,12 @@ export interface DailyReport {
   submittedAt?: string;
 }
 
+export interface CompanyInfo {
+  name: string;
+  address: string;
+  phone: string;
+}
+
 export interface Expense {
   id: string;
   projectId: string;

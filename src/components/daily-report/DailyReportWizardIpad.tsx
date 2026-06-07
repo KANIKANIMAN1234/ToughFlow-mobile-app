@@ -19,6 +19,7 @@ export function DailyReportWizardIpad() {
     setVehicleNote,
     setMaterialValue,
     getMaterialValue,
+    openPreview,
     handleSubmit,
   } = useDailyReportWizard();
 
@@ -51,7 +52,10 @@ export function DailyReportWizardIpad() {
 
         <div className="shrink-0 border-t border-surface-border bg-white px-6 py-4">
           <div className="mx-auto flex max-w-[794px] gap-2">
-            <Button variant="secondary" disabled>
+            <Button
+              variant="secondary"
+              onClick={() => openPreview().catch((e) => alert(e.message))}
+            >
               PDFプレビュー
             </Button>
             <Button fullWidth disabled={submitting} onClick={handleSubmit}>

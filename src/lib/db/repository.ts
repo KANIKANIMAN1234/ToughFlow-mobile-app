@@ -7,6 +7,7 @@ import {
 } from "@/lib/permissions/defaults";
 import type {
   AccessLevel,
+  CompanyInfo,
   DailyReport,
   DailyReportContent,
   DailyReportMaterial,
@@ -315,6 +316,38 @@ export async function listExpenseCategories(
 
   if (error) throw new Error(error.message);
   return (data ?? []).map((r) => mapMasterBase(r) as ExpenseCategory);
+}
+
+export async function getCompanyInfo(tenantId: string): Promise<CompanyInfo> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("m_tenant")
+    .select("name, company_info")
+    .eq("id", tenantId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  const info = (data?.company_info ?? {}) as Record<string, unknown>;
+  return {
+    name: data?.name ?? (info.name as string) ?? "",
+    address: (info.address as string) ?? "",
+    phone: (info.phone as string) ?? "",
+  };
+}
+
+export async function updateDailyReportPdfRef(
+  tenantId: string,
+  reportId: string,
+  pdfRef: string
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("t_daily_report")
+    .update({ report_pdf_drive_id: pdfRef })
+    .eq("tenant_id", tenantId)
+    .eq("id", reportId);
+
+  if (error) throw new Error(error.message);
 }
 
 async function getProjectName(projectId: string): Promise<string> {

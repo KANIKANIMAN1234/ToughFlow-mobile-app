@@ -91,6 +91,29 @@ export default function DailyReportDetailPage() {
           </ul>
         </Card>
       )}
+
+      {report.status === "submitted" && (
+        <Card title="PDF" className="mt-4">
+          <div className="flex gap-3">
+            <a
+              href={`/api/daily-reports/${id}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center rounded-xl bg-apple-blue px-4 py-2 text-sm font-medium text-white"
+            >
+              PDF を開く
+            </a>
+            <a
+              href={`/api/daily-reports/${id}/preview`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center rounded-xl border border-surface-border px-4 py-2 text-sm font-medium text-apple-text"
+            >
+              プレビュー
+            </a>
+          </div>
+        </Card>
+      )}
     </AppShell>
   );
 }

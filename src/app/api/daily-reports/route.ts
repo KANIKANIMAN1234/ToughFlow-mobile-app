@@ -4,6 +4,7 @@ import {
   getDailyReport,
   listDailyReports,
 } from "@/lib/db/repository";
+import { generateAndStoreDailyReportPdf } from "@/lib/pdf/submit-daily-report-pdf";
 import { requirePermission } from "@/lib/permissions/check";
 import type { DailyReport, DailyReportContent } from "@/lib/types";
 
@@ -52,7 +53,17 @@ export async function POST(request: NextRequest) {
       content,
       status,
     });
-    return NextResponse.json({ report }, { status: 201 });
+
+    let pdfGenerated = false;
+    if (status === "submitted") {
+      const pdfResult = await generateAndStoreDailyReportPdf(
+        session.tenantId,
+        report
+      );
+      pdfGenerated = pdfResult.pdfGenerated;
+    }
+
+    return NextResponse.json({ report, pdfGenerated }, { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "登録に失敗しました";
     return NextResponse.json({ error: message }, { status: 500 });
