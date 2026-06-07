@@ -116,6 +116,31 @@ export interface DailyReport {
   submittedAt?: string;
 }
 
+export type AttendancePunchType =
+  | "clock_in"
+  | "break_out"
+  | "break_in"
+  | "clock_out";
+
+export type AttendanceState = "idle" | "working" | "on_break" | "finished";
+
+export interface AttendancePunch {
+  id: string;
+  userId: string;
+  punchType: AttendancePunchType;
+  punchedAt: string;
+  workDate: string;
+  source: "pc" | "mobile";
+  note?: string;
+}
+
+export interface AttendanceStatus {
+  state: AttendanceState;
+  workDate: string;
+  punches: AttendancePunch[];
+  allowedTypes: AttendancePunchType[];
+}
+
 export interface CompanyInfo {
   name: string;
   address: string;

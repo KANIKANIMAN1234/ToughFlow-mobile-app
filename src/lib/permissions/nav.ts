@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   ClipboardList,
+  Clock,
   FileText,
   Home,
   MapPin,
@@ -18,6 +19,12 @@ export type NavItemDef = {
 
 export const MOBILE_NAV_ITEMS: NavItemDef[] = [
   { href: "/home", label: "ホーム", icon: Home },
+  {
+    href: "/attendance",
+    label: "出退勤",
+    icon: Clock,
+    permissions: ["attendance_register"],
+  },
   {
     href: "/expenses/new",
     label: "立替精算",
