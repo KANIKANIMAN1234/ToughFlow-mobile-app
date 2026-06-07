@@ -4,6 +4,7 @@ import {
   Clock,
   FileText,
   Home,
+  Map,
   MapPin,
   Receipt,
 } from "lucide-react";
@@ -42,6 +43,16 @@ export const MOBILE_NAV_ITEMS: NavItemDef[] = [
     label: "現地調査",
     icon: MapPin,
     permissions: ["site_survey_register", "site_survey_view_shared"],
+  },
+  {
+    href: "/map",
+    label: "地図",
+    icon: Map,
+    permissions: [
+      "project_list_other",
+      "daily_report_register",
+      "site_survey_register",
+    ],
   },
   {
     href: "/projects",
