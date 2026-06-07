@@ -10,7 +10,7 @@ type SubmitPayload = {
 
 export async function submitSiteSurvey(
   payload: SubmitPayload
-): Promise<{ survey: SiteSurvey }> {
+): Promise<{ survey: SiteSurvey; pdfGenerated?: boolean }> {
   const photoFiles = await collectSiteSurveyPhotoFiles(payload.content);
 
   if (photoFiles.length > 0) {
@@ -28,8 +28,11 @@ export async function submitSiteSurvey(
     if (!res.ok) {
       throw new Error(data.error ?? "登録に失敗しました");
     }
-    return data as { survey: SiteSurvey };
+    return data as { survey: SiteSurvey; pdfGenerated?: boolean };
   }
 
-  return api.post<{ survey: SiteSurvey }>("/api/site-surveys", payload);
+  return api.post<{ survey: SiteSurvey; pdfGenerated?: boolean }>(
+    "/api/site-surveys",
+    payload
+  );
 }

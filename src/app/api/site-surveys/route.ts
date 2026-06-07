@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSiteSurvey, listSiteSurveys } from "@/lib/db/repository";
 import { uploadSiteSurveyPhotos } from "@/lib/google/site-survey-photos";
+import { generateAndStoreSiteSurveyPdf } from "@/lib/pdf/submit-site-survey-pdf";
 import { requireAnyPermission, requirePermission } from "@/lib/permissions/check";
 import type { SiteSurvey, SiteSurveyContent } from "@/lib/types";
 
@@ -88,7 +89,19 @@ export async function POST(request: NextRequest) {
       driveFileIds,
     });
 
-    return NextResponse.json({ survey, driveFileIds }, { status: 201 });
+    let pdfGenerated = false;
+    if (status === "published") {
+      const pdfResult = await generateAndStoreSiteSurveyPdf(
+        auth.session.tenantId,
+        survey
+      );
+      pdfGenerated = pdfResult.pdfGenerated;
+    }
+
+    return NextResponse.json(
+      { survey, driveFileIds, pdfGenerated },
+      { status: 201 }
+    );
   } catch (e) {
     const message = e instanceof Error ? e.message : "登録に失敗しました";
     return NextResponse.json({ error: message }, { status: 500 });

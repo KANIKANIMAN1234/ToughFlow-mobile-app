@@ -1,4 +1,8 @@
-import { updateDailyReportPdfRef, updateExpenseDriveFileId } from "@/lib/db/repository";
+import {
+  updateDailyReportPdfRef,
+  updateExpenseDriveFileId,
+  updateSiteSurveyPdfRef,
+} from "@/lib/db/repository";
 import type { Expense } from "@/lib/types";
 import { getSubfolderId, uploadFileToDrive } from "./drive";
 
@@ -61,6 +65,30 @@ export async function uploadDailyReportPdf(
 
   if (driveFileId) {
     await updateDailyReportPdfRef(tenantId, reportId, driveFileId);
+  }
+
+  return driveFileId;
+}
+
+export async function uploadSiteSurveyReportPdf(
+  tenantId: string,
+  projectId: string,
+  surveyId: string,
+  fileName: string,
+  pdf: Buffer
+): Promise<string | null> {
+  const folderId = await getSubfolderId(tenantId, projectId, "報告書");
+  if (!folderId) return null;
+
+  const driveFileId = await uploadFileToDrive(
+    folderId,
+    fileName,
+    "application/pdf",
+    pdf
+  );
+
+  if (driveFileId) {
+    await updateSiteSurveyPdfRef(tenantId, surveyId, driveFileId);
   }
 
   return driveFileId;

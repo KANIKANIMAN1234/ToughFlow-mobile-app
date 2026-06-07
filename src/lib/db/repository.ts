@@ -911,6 +911,40 @@ export async function listSiteSurveys(
   return (data ?? []).map((row) => parseSiteSurveyRow(row as never));
 }
 
+export async function getSiteSurvey(
+  tenantId: string,
+  id: string
+): Promise<SiteSurvey | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("t_site_survey")
+    .select(
+      "id, project_id, user_id, checklist, created_at, m_project(name), m_user(name)"
+    )
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return parseSiteSurveyRow(data as never);
+}
+
+export async function updateSiteSurveyPdfRef(
+  tenantId: string,
+  surveyId: string,
+  pdfRef: string
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("t_site_survey")
+    .update({ report_pdf_drive_id: pdfRef })
+    .eq("tenant_id", tenantId)
+    .eq("id", surveyId);
+
+  if (error) throw new Error(error.message);
+}
+
 export async function createSiteSurvey(
   tenantId: string,
   input: {
