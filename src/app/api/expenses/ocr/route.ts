@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { listExpenseCategories } from "@/lib/db/repository";
+import { extractReceiptFromImage } from "@/lib/openai/receipt-ocr";
 import { requirePermission } from "@/lib/permissions/check";
 
 export async function POST(request: NextRequest) {
@@ -12,12 +14,40 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "file required" }, { status: 400 });
   }
 
-  // デモ OCR（本番: OpenAI Vision API）
-  return NextResponse.json({
-    amount: 6800,
-    categoryName: "高速代",
-    expenseDate: new Date().toISOString().slice(0, 10),
-    confidence: 0.9,
-    rawText: "領収書 OCR デモ結果",
-  });
+  try {
+    const categories = await listExpenseCategories(auth.session.tenantId);
+    const categoryNames = categories.map((c) => c.name);
+    const buffer = await file.arrayBuffer();
+    const mimeType = file.type || "image/jpeg";
+
+    const result = await extractReceiptFromImage(
+      buffer,
+      mimeType,
+      categoryNames
+    );
+
+    if (!result.demo && result.amount == null) {
+      return NextResponse.json(
+        {
+          error: "金額を読み取れませんでした。手動で入力してください。",
+          rawText: result.rawText,
+        },
+        { status: 422 }
+      );
+    }
+
+    return NextResponse.json({
+      amount: result.amount,
+      categoryName: result.categoryName,
+      expenseDate: result.expenseDate ?? new Date().toISOString().slice(0, 10),
+      storeName: result.storeName,
+      confidence: result.confidence,
+      rawText: result.rawText,
+      demo: result.demo ?? false,
+    });
+  } catch (e) {
+    const message =
+      e instanceof Error ? e.message : "OCR に失敗しました";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

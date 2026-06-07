@@ -47,13 +47,22 @@ export function ExpenseForm() {
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("/api/expenses/ocr", { method: "POST", body: form });
+      const res = await fetch("/api/expenses/ocr", {
+        method: "POST",
+        body: form,
+        credentials: "include",
+      });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "OCR に失敗しました");
+      }
       setAmount(String(data.amount ?? ""));
       setExpenseDate(data.expenseDate ?? todayISO());
       const cat = categories.find((c) => c.name === data.categoryName);
       if (cat) setCategoryId(cat.id);
       setInputMethod("ocr");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "OCR に失敗しました");
     } finally {
       setOcrLoading(false);
     }
