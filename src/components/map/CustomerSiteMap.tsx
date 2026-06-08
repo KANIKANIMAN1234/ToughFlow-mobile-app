@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AdvancedMarker,
+  AdvancedMarkerAnchorPoint,
   APILoadingStatus,
   APIProvider,
   InfoWindow,
@@ -204,6 +205,7 @@ function CustomerSiteMap({ enabled }: { enabled: boolean }) {
             <AdvancedMarker
               key={marker.id}
               position={{ lat: marker.lat, lng: marker.lng }}
+              anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM_CENTER}
               onClick={() => setSelectedId(marker.id)}
             >
               <CustomerMapPin name={marker.customerName} />
