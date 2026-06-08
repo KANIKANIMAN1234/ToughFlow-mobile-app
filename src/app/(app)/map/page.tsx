@@ -38,8 +38,10 @@ export default function MapPage() {
     <AppShell title="地図">
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col",
-          isTablet ? "-mx-6 -my-5" : "-mx-4 -mt-5 -mb-24"
+          "flex flex-col",
+          isTablet
+            ? "h-[calc(100dvh-2.75rem-3rem)] -mx-6 -my-5"
+            : "h-[calc(100dvh-2.75rem)] -mx-4 -mt-5 -mb-24"
         )}
       >
         <CustomerSiteMapRoot enabled={allowed} />

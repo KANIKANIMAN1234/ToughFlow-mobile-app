@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AdvancedMarker,
   AdvancedMarkerAnchorPoint,
@@ -17,7 +17,6 @@ import { useDisplayMode } from "@/contexts/DisplayModeContext";
 import { CardListSkeleton } from "@/components/ui/Skeleton";
 import { useApi } from "@/hooks/useApi";
 import type { MapMarker, ResolvedMapMarker } from "@/lib/map/types";
-import { cn } from "@/lib/utils";
 
 const MAP_ID =
   process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID?.trim() || "DEMO_MAP_ID";
@@ -89,7 +88,55 @@ function GoogleMapsLoadGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return <div className="flex h-full flex-col">{children}</div>;
+}
+
+/** Google Maps は親の明示高さが必要なため、ResizeObserver で px 指定する */
+function MapViewport({ children }: { children: ReactNode }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+  const { mode } = useDisplayMode();
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const next = Math.floor(el.getBoundingClientRect().height);
+      if (next > 0) setHeight(next);
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    window.addEventListener("resize", update);
+    const timers = [100, 300, 600, 1000].map((ms) =>
+      window.setTimeout(update, ms)
+    );
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+      for (const id of timers) window.clearTimeout(id);
+    };
+  }, [mode]);
+
+  return (
+    <div ref={containerRef} className="h-full min-h-0 w-full flex-1">
+      {height > 0 ? (
+        <Map
+          mapId={MAP_ID}
+          defaultCenter={DEFAULT_CENTER}
+          defaultZoom={DEFAULT_ZOOM}
+          gestureHandling="greedy"
+          disableDefaultUI={false}
+          style={{ width: "100%", height: `${height}px` }}
+        >
+          {children}
+        </Map>
+      ) : null}
+    </div>
+  );
 }
 
 function MapResizeHandler() {
@@ -191,39 +238,32 @@ function CustomerSiteMap({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-none ring-1 ring-surface-border">
-        <Map
-          mapId={MAP_ID}
-          defaultCenter={DEFAULT_CENTER}
-          defaultZoom={DEFAULT_ZOOM}
-          gestureHandling="greedy"
-          disableDefaultUI={false}
-          className="min-h-0 w-full flex-1"
-        >
-          <MapResizeHandler />
-          <MapBoundsFitter markers={resolved} />
-          {resolved.map((marker) => (
-            <AdvancedMarker
-              key={marker.id}
-              position={{ lat: marker.lat, lng: marker.lng }}
-              anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM_CENTER}
-              onClick={() => setSelectedId(marker.id)}
-            >
-              <CustomerMapPin name={marker.customerName} />
-            </AdvancedMarker>
-          ))}
-          {selected && (
-            <InfoWindow
-              position={{ lat: selected.lat, lng: selected.lng }}
-              onCloseClick={() => setSelectedId(null)}
-            >
-              <div className="max-w-[220px] space-y-1 text-sm text-gray-900">
-                <p className="font-medium">{selected.customerName}</p>
-                <p>{selected.address}</p>
-              </div>
-            </InfoWindow>
-          )}
-        </Map>
+    <div className="flex h-full flex-col overflow-hidden rounded-none ring-1 ring-surface-border">
+      <MapViewport>
+        <MapResizeHandler />
+        <MapBoundsFitter markers={resolved} />
+        {resolved.map((marker) => (
+          <AdvancedMarker
+            key={marker.id}
+            position={{ lat: marker.lat, lng: marker.lng }}
+            anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM_CENTER}
+            onClick={() => setSelectedId(marker.id)}
+          >
+            <CustomerMapPin name={marker.customerName} />
+          </AdvancedMarker>
+        ))}
+        {selected && (
+          <InfoWindow
+            position={{ lat: selected.lat, lng: selected.lng }}
+            onCloseClick={() => setSelectedId(null)}
+          >
+            <div className="max-w-[220px] space-y-1 text-sm text-gray-900">
+              <p className="font-medium">{selected.customerName}</p>
+              <p>{selected.address}</p>
+            </div>
+          </InfoWindow>
+        )}
+      </MapViewport>
     </div>
   );
 }
@@ -240,7 +280,7 @@ export function CustomerSiteMapRoot({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full flex-col">
       <APIProvider
         apiKey={apiKey}
         language="ja"
