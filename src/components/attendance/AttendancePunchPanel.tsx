@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
   getPunchButtonClassName,
@@ -63,20 +62,22 @@ export function AttendancePunchPanel({
         {PUNCH_BUTTONS.map(({ type, label }) => {
           const enabled = allowed.has(type) && !isLoading && submitting === null;
           return (
-            <Button
+            <button
               key={type}
-              fullWidth={layout === "grid"}
-              variant="ghost"
+              type="button"
               disabled={!enabled}
               onClick={() => handlePunch(type)}
               className={cn(
-                layout === "grid" && "min-h-[4.5rem] text-lg",
+                "inline-flex items-center justify-center rounded-xl font-semibold transition-colors focus-apple",
+                layout === "grid"
+                  ? "min-h-[4.5rem] w-full text-lg"
+                  : "px-4 py-2 text-body",
                 getPunchButtonClassName(type, enabled),
-                !enabled && "cursor-not-allowed opacity-70"
+                !enabled && "cursor-not-allowed"
               )}
             >
               {submitting === type ? "打刻中…" : label}
-            </Button>
+            </button>
           );
         })}
       </div>
