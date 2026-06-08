@@ -122,7 +122,7 @@ export function AppShell({
 
         <NavTabs pathname={pathname} items={visibleNav} />
 
-        <main className="flex min-h-0 flex-1 flex-col">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col px-6 py-5">{children}</main>
       </div>
     );
   }

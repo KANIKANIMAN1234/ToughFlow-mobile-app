@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AdvancedMarker,
+  APILoadingStatus,
   APIProvider,
   InfoWindow,
   Map,
+  useApiLoadingStatus,
   useMap,
   useMapsLibrary,
 } from "@vis.gl/react-google-maps";
 import { CustomerMapPin } from "@/components/map/CustomerMapPin";
-import { Card } from "@/components/ui/Card";
+import { useDisplayMode } from "@/contexts/DisplayModeContext";
 import { CardListSkeleton } from "@/components/ui/Skeleton";
 import { useApi } from "@/hooks/useApi";
 import type { MapMarker, ResolvedMapMarker } from "@/lib/map/types";
@@ -48,6 +50,67 @@ async function geocodeAddress(
   });
 }
 
+function GoogleMapsLoadGate({ children }: { children: React.ReactNode }) {
+  const status = useApiLoadingStatus();
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "";
+
+  if (
+    status === APILoadingStatus.NOT_LOADED ||
+    status === APILoadingStatus.LOADING
+  ) {
+    return (
+      <p className="text-caption text-apple-glyph">地図を読み込んでいます…</p>
+    );
+  }
+
+  if (
+    status === APILoadingStatus.FAILED ||
+    status === APILoadingStatus.AUTH_FAILURE
+  ) {
+    return (
+      <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        <p className="font-medium">Google マップを読み込めませんでした。</p>
+        <p className="text-caption">以下をご確認ください。</p>
+        <ul className="list-disc space-y-1 pl-5 text-caption">
+          <li>
+            Google Cloud の API キー「HTTP リファラー」にこのアプリの URL を追加する
+            {origin ? `（例: ${origin}/*）` : ""}
+          </li>
+          <li>Maps JavaScript API が有効になっているか</li>
+          <li>
+            Vercel（モバイルプロジェクト）に NEXT_PUBLIC_GOOGLE_MAPS_API_KEY と
+            NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID が設定済みか（設定後は再デプロイが必要）
+          </li>
+        </ul>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+function MapResizeHandler() {
+  const map = useMap();
+  const { mode } = useDisplayMode();
+
+  useEffect(() => {
+    if (!map) return;
+    const trigger = () => {
+      google.maps.event.trigger(map, "resize");
+    };
+    trigger();
+    const timers = [100, 400, 800].map((ms) => window.setTimeout(trigger, ms));
+    window.addEventListener("resize", trigger);
+    return () => {
+      for (const id of timers) window.clearTimeout(id);
+      window.removeEventListener("resize", trigger);
+    };
+  }, [map, mode]);
+
+  return null;
+}
+
 function MapBoundsFitter({ markers }: { markers: ResolvedMapMarker[] }) {
   const map = useMap();
 
@@ -72,7 +135,6 @@ function CustomerSiteMap({ enabled }: { enabled: boolean }) {
   );
   const markers = useMemo(() => data?.markers ?? [], [data?.markers]);
   const [resolved, setResolved] = useState<ResolvedMapMarker[]>([]);
-  const [geocodePending, setGeocodePending] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const geocodingLib = useMapsLibrary("geocoding");
 
@@ -83,7 +145,6 @@ function CustomerSiteMap({ enabled }: { enabled: boolean }) {
     const geocoder = new geocodingLib.Geocoder();
 
     async function resolveMarkers() {
-      setGeocodePending(true);
       const next: ResolvedMapMarker[] = [];
 
       for (const marker of markers) {
@@ -96,11 +157,7 @@ function CustomerSiteMap({ enabled }: { enabled: boolean }) {
         if (coords) next.push({ ...marker, lat: coords.lat, lng: coords.lng });
       }
 
-      if (!cancelled) {
-        setResolved(next);
-        setGeocodePending(false);
-        if (next.length > 0) setSelectedId(next[0].id);
-      }
+      if (!cancelled) setResolved(next);
     }
 
     void resolveMarkers();
@@ -132,16 +189,16 @@ function CustomerSiteMap({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-hidden rounded-xl ring-1 ring-surface-border">
+    <div className="overflow-hidden rounded-xl ring-1 ring-surface-border">
         <Map
           mapId={MAP_ID}
           defaultCenter={DEFAULT_CENTER}
           defaultZoom={DEFAULT_ZOOM}
           gestureHandling="greedy"
           disableDefaultUI={false}
-          className="h-[min(55vh,420px)] w-full"
+          className="h-[min(55vh,420px)] min-h-[320px] w-full"
         >
+          <MapResizeHandler />
           <MapBoundsFitter markers={resolved} />
           {resolved.map((marker) => (
             <AdvancedMarker
@@ -164,32 +221,6 @@ function CustomerSiteMap({ enabled }: { enabled: boolean }) {
             </InfoWindow>
           )}
         </Map>
-      </div>
-
-      <Card title={`現場一覧（${resolved.length}件）`}>
-        {geocodePending ? (
-          <p className="text-caption text-apple-glyph">位置を取得しています…</p>
-        ) : (
-          <ul className="divide-y divide-surface-border">
-            {resolved.map((marker) => (
-              <li key={marker.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(marker.id)}
-                  className="flex w-full flex-col gap-0.5 py-3 text-left"
-                >
-                  <span className="text-caption font-normal text-apple-text">
-                    {marker.customerName}
-                  </span>
-                  <span className="text-nav-link text-apple-glyph">
-                    {marker.address}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
     </div>
   );
 }
@@ -206,8 +237,15 @@ export function CustomerSiteMapRoot({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <APIProvider apiKey={apiKey} language="ja" region="JP">
-      <CustomerSiteMap enabled={enabled} />
+    <APIProvider
+      apiKey={apiKey}
+      language="ja"
+      region="JP"
+      libraries={["marker", "geocoding"]}
+    >
+      <GoogleMapsLoadGate>
+        <CustomerSiteMap enabled={enabled} />
+      </GoogleMapsLoadGate>
     </APIProvider>
   );
 }
