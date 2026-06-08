@@ -17,6 +17,7 @@ import { useDisplayMode } from "@/contexts/DisplayModeContext";
 import { CardListSkeleton } from "@/components/ui/Skeleton";
 import { useApi } from "@/hooks/useApi";
 import type { MapMarker, ResolvedMapMarker } from "@/lib/map/types";
+import { cn } from "@/lib/utils";
 
 const MAP_ID =
   process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID?.trim() || "DEMO_MAP_ID";
@@ -190,14 +191,14 @@ function CustomerSiteMap({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl ring-1 ring-surface-border">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-none ring-1 ring-surface-border">
         <Map
           mapId={MAP_ID}
           defaultCenter={DEFAULT_CENTER}
           defaultZoom={DEFAULT_ZOOM}
           gestureHandling="greedy"
           disableDefaultUI={false}
-          className="h-[min(55vh,420px)] min-h-[320px] w-full"
+          className="min-h-0 w-full flex-1"
         >
           <MapResizeHandler />
           <MapBoundsFitter markers={resolved} />
@@ -239,15 +240,17 @@ export function CustomerSiteMapRoot({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <APIProvider
-      apiKey={apiKey}
-      language="ja"
-      region="JP"
-      libraries={["marker", "geocoding"]}
-    >
-      <GoogleMapsLoadGate>
-        <CustomerSiteMap enabled={enabled} />
-      </GoogleMapsLoadGate>
-    </APIProvider>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <APIProvider
+        apiKey={apiKey}
+        language="ja"
+        region="JP"
+        libraries={["marker", "geocoding"]}
+      >
+        <GoogleMapsLoadGate>
+          <CustomerSiteMap enabled={enabled} />
+        </GoogleMapsLoadGate>
+      </APIProvider>
+    </div>
   );
 }

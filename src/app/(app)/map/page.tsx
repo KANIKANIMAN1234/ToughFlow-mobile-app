@@ -3,12 +3,15 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { CustomerSiteMapRoot } from "@/components/map/CustomerSiteMap";
 import { CardListSkeleton } from "@/components/ui/Skeleton";
+import { useDisplayMode } from "@/contexts/DisplayModeContext";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { usePermissions } from "@/hooks/usePermissions";
+import { cn } from "@/lib/utils";
 
 export default function MapPage() {
   const { user, authLoading } = useAuthGuard();
   const { canAccess, loading: permLoading } = usePermissions();
+  const { isTablet } = useDisplayMode();
 
   const allowed =
     canAccess("project_list_other") ||
@@ -33,7 +36,14 @@ export default function MapPage() {
 
   return (
     <AppShell title="地図">
-      <CustomerSiteMapRoot enabled={allowed} />
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col",
+          isTablet ? "-mx-6 -my-5" : "-mx-4 -mt-5 -mb-24"
+        )}
+      >
+        <CustomerSiteMapRoot enabled={allowed} />
+      </div>
     </AppShell>
   );
 }

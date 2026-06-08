@@ -104,7 +104,7 @@ export function AppShell({
 
   if (isTablet) {
     return (
-      <div className="flex min-h-screen flex-col bg-surface">
+      <div className="flex min-h-dvh flex-col bg-surface">
         <header className="glass-nav sticky top-0 z-30 flex h-11 shrink-0 items-center gap-3 px-6">
           <div className="min-w-0 flex-1">
             <p className="text-nav-link font-normal text-apple-glyph">ToughFlow</p>
@@ -128,8 +128,8 @@ export function AppShell({
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-mobile bg-surface">
-      <header className="glass-nav sticky top-0 z-30 flex h-11 items-center gap-2 px-3">
+    <div className="mx-auto flex min-h-dvh flex-col max-w-mobile bg-surface">
+      <header className="glass-nav sticky top-0 z-30 flex h-11 shrink-0 items-center gap-2 px-3">
         <button
           type="button"
           aria-label="メニュー"
@@ -189,7 +189,7 @@ export function AppShell({
         </div>
       </aside>
 
-      <main className="px-4 py-5 pb-24">{children}</main>
+      <main className="flex min-h-0 flex-1 flex-col px-4 py-5 pb-24">{children}</main>
     </div>
   );
 }
