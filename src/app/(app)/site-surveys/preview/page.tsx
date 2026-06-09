@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
+import {
+  FixedActionBar,
+  FixedActionBarSpacer,
+} from "@/components/layout/FixedActionBar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +61,7 @@ export default function SiteSurveyPreviewPage() {
 
   return (
     <AppShell title="現地調査プレビュー">
+      <FixedActionBarSpacer>
       <Card title="案件">
         <p className="text-body text-apple-text">{state.projectName}</p>
       </Card>
@@ -127,8 +132,9 @@ export default function SiteSurveyPreviewPage() {
           ))}
         </ul>
       </Card>
+      </FixedActionBarSpacer>
 
-      <div className="fixed bottom-0 left-0 right-0 mx-auto flex max-w-mobile gap-2 border-t bg-white p-4">
+      <FixedActionBar>
         <Button
           variant="secondary"
           disabled={submitting}
@@ -150,7 +156,7 @@ export default function SiteSurveyPreviewPage() {
         >
           {submitting ? "保存中…" : "確定"}
         </Button>
-      </div>
+      </FixedActionBar>
     </AppShell>
   );
 }

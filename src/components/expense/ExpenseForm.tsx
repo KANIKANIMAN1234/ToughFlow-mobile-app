@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import {
+  FixedActionBar,
+  FixedActionBarSpacer,
+} from "@/components/layout/FixedActionBar";
 import { ExpenseListSection } from "@/components/expense/ExpenseListSection";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -143,7 +147,7 @@ export function ExpenseForm() {
 
   return (
     <AppShell title="立替精算登録">
-      <div className="pb-24">
+      <FixedActionBarSpacer>
       <Card title="領収書">
         <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50 px-4 py-8">
           {ocrLoading ? (
@@ -255,9 +259,9 @@ export function ExpenseForm() {
           expenses={expenses}
           isLoading={isLoading && !data}
         />
-      </div>
+      </FixedActionBarSpacer>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto flex max-w-mobile gap-2 border-t bg-white p-4">
+      <FixedActionBar>
         <Button
           variant="secondary"
           disabled={submitting || !amount}
@@ -272,7 +276,7 @@ export function ExpenseForm() {
         >
           {submitting ? "保存中…" : "提出"}
         </Button>
-      </div>
+      </FixedActionBar>
     </AppShell>
   );
 }

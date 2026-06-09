@@ -1,6 +1,10 @@
 "use client";
 
 import { AppShell } from "@/components/layout/AppShell";
+import {
+  FixedActionBar,
+  FixedActionBarSpacer,
+} from "@/components/layout/FixedActionBar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -47,6 +51,7 @@ export function DailyReportWizard() {
 
   return (
     <AppShell title="作業日報入力">
+      <FixedActionBarSpacer>
       <StepIndicator steps={STEPS} current={step} />
 
       {step === 1 && (
@@ -402,8 +407,9 @@ export function DailyReportWizard() {
           </div>
         </Card>
       )}
+      </FixedActionBarSpacer>
 
-      <div className="fixed bottom-0 left-0 right-0 mx-auto flex max-w-mobile gap-2 border-t bg-white p-4">
+      <FixedActionBar>
         {step > 1 && (
           <Button variant="secondary" onClick={() => setStep((s) => s - 1)}>
             戻る
@@ -418,7 +424,7 @@ export function DailyReportWizard() {
             {submitting ? "送信中…" : "送信"}
           </Button>
         )}
-      </div>
+      </FixedActionBar>
     </AppShell>
   );
 }
