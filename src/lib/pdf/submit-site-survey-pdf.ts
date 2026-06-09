@@ -23,9 +23,12 @@ export async function generateAndStoreSiteSurveyPdf(
       filename,
       pdf
     );
-    if (driveFileId) {
-      return { pdfGenerated: true, driveFileId };
+    if (!driveFileId) {
+      throw new Error(
+        "報告書フォルダ（Google Drive）への PDF 保存に失敗しました。フォルダ設計と共有ドライブの設定を確認してください。"
+      );
     }
+    return { pdfGenerated: true, driveFileId };
   }
 
   return { pdfGenerated: true };
