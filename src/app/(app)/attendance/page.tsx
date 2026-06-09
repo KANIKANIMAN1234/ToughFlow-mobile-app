@@ -39,7 +39,7 @@ export default function AttendancePage() {
 
   return (
     <AppShell title="出退勤">
-      <div className={isTablet ? "mx-auto max-w-[480px] p-6" : undefined}>
+      <div className={isTablet ? "mx-auto max-w-[480px]" : undefined}>
         {isLoading && !data ? (
           <CardListSkeleton />
         ) : (
@@ -47,7 +47,7 @@ export default function AttendancePage() {
             status={data?.status}
             isLoading={isLoading}
             onPunch={handlePunch}
-            layout={isTablet ? "compact" : "grid"}
+            layout="grid"
           />
         )}
       </div>
