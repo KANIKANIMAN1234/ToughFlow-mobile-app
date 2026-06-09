@@ -29,6 +29,41 @@ export const DEFAULT_DRIVE_FOLDER_MAPPINGS: DriveFolderMappings = {
   invoice: "請求",
 };
 
+const FOLDER_NAME_KEYWORDS: Record<DriveDocumentType, string[]> = {
+  expense: ["経費"],
+  daily_report: ["日報"],
+  site_survey_photo: ["写真（現場", "写真(現場", "写真（現地", "08.写真"],
+  site_survey_report: ["現地調査報告", "報告書", "03.現地調査"],
+  estimate: ["見積"],
+  work_completion: ["作業完了"],
+  invoice: ["請求"],
+};
+
+function guessSubfolderForDocumentType(
+  type: DriveDocumentType,
+  subfolderNames: string[]
+): string | null {
+  for (const keyword of FOLDER_NAME_KEYWORDS[type]) {
+    const match = subfolderNames.find((name) => name.includes(keyword));
+    if (match) return match;
+  }
+
+  const defaultName = DEFAULT_DRIVE_FOLDER_MAPPINGS[type];
+  if (type === "site_survey_photo") {
+    const photoFolder = subfolderNames.find(
+      (name) => name.includes("写真") && name.includes("現")
+    );
+    if (photoFolder) return photoFolder;
+  }
+  if (type === "site_survey_report") {
+    const reportFolder = subfolderNames.find((name) => name.includes("報告"));
+    if (reportFolder) return reportFolder;
+  }
+
+  const looseMatch = subfolderNames.find((name) => name.includes(defaultName));
+  return looseMatch ?? null;
+}
+
 export function mergeDocumentFolderMap(
   partial: Partial<DriveFolderMappings> | null | undefined
 ): DriveFolderMappings {
@@ -64,10 +99,21 @@ export function syncMappingsToSubfolders(
   const fallback = subfolderNames[0] ?? DEFAULT_DRIVE_FOLDER_MAPPINGS.expense;
   const next = { ...map };
   for (const key of DRIVE_DOCUMENT_TYPES) {
-    if (!subfolderNames.includes(next[key])) {
-      const defaultName = DEFAULT_DRIVE_FOLDER_MAPPINGS[key];
-      next[key] = subfolderNames.includes(defaultName) ? defaultName : fallback;
+    if (subfolderNames.includes(next[key])) continue;
+
+    const defaultName = DEFAULT_DRIVE_FOLDER_MAPPINGS[key];
+    if (subfolderNames.includes(defaultName)) {
+      next[key] = defaultName;
+      continue;
     }
+
+    const guessed = guessSubfolderForDocumentType(key, subfolderNames);
+    if (guessed) {
+      next[key] = guessed;
+      continue;
+    }
+
+    next[key] = fallback;
   }
   return next;
 }
