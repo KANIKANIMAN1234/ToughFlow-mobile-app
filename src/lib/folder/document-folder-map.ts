@@ -122,6 +122,13 @@ export function normalizeFolderSubfolderNames(
   subfolderNames: string[],
   documentFolderMap: DriveFolderMappings
 ): string[] {
+  return collectDriveSubfolderNames(subfolderNames, documentFolderMap);
+}
+
+export function collectDriveSubfolderNames(
+  subfolderNames: string[],
+  documentFolderMap: DriveFolderMappings
+): string[] {
   const names = new Set(
     subfolderNames.map((name) => name.trim()).filter(Boolean)
   );

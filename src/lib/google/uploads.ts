@@ -1,10 +1,39 @@
 import {
+  getFolderSettingsForDrive,
   updateDailyReportPdfRef,
   updateExpenseDriveFileId,
   updateSiteSurveyPdfRef,
 } from "@/lib/db/repository";
+import {
+  resolveDocumentFolderName,
+  type DriveDocumentType,
+} from "@/lib/folder/document-folder-map";
 import type { Expense } from "@/lib/types";
 import { getDocumentSubfolderId, uploadFileToDrive } from "./drive";
+
+async function requireDocumentSubfolderId(
+  tenantId: string,
+  projectId: string,
+  documentType: DriveDocumentType,
+  label: string
+): Promise<string> {
+  const settings = await getFolderSettingsForDrive(tenantId);
+  const folderName = resolveDocumentFolderName(
+    settings.documentFolderMap,
+    documentType
+  );
+  const folderId = await getDocumentSubfolderId(
+    tenantId,
+    projectId,
+    documentType
+  );
+  if (folderId) return folderId;
+
+  throw new Error(
+    `${label}の保存先フォルダ「${folderName}」を Google Drive 上に作成できませんでした。` +
+      "設定のフォルダ設計（ルートフォルダ ID・共有ドライブ）を確認してください。"
+  );
+}
 
 function receiptFileName(
   expense: Pick<Expense, "expenseDate" | "amount" | "categoryName">,
@@ -27,8 +56,12 @@ export async function uploadExpenseReceipt(
   expense: Expense,
   file: { buffer: Buffer; mimeType: string }
 ): Promise<string | null> {
-  const folderId = await getDocumentSubfolderId(tenantId, expense.projectId, "expense");
-  if (!folderId) return null;
+  const folderId = await requireDocumentSubfolderId(
+    tenantId,
+    expense.projectId,
+    "expense",
+    "立替・経費（領収書）"
+  );
 
   const ext = mimeToExt(file.mimeType);
   const fileName = receiptFileName(expense, ext);
@@ -53,8 +86,12 @@ export async function uploadDailyReportPdf(
   fileName: string,
   pdf: Buffer
 ): Promise<string | null> {
-  const folderId = await getDocumentSubfolderId(tenantId, projectId, "daily_report");
-  if (!folderId) return null;
+  const folderId = await requireDocumentSubfolderId(
+    tenantId,
+    projectId,
+    "daily_report",
+    "作業日報（PDF）"
+  );
 
   const driveFileId = await uploadFileToDrive(
     folderId,
@@ -77,12 +114,12 @@ export async function uploadSiteSurveyReportPdf(
   fileName: string,
   pdf: Buffer
 ): Promise<string | null> {
-  const folderId = await getDocumentSubfolderId(
+  const folderId = await requireDocumentSubfolderId(
     tenantId,
     projectId,
-    "site_survey_report"
+    "site_survey_report",
+    "現地調査報告書（PDF）"
   );
-  if (!folderId) return null;
 
   const driveFileId = await uploadFileToDrive(
     folderId,

@@ -7,6 +7,7 @@ import {
   updateProjectDriveFolderId,
 } from "@/lib/db/repository";
 import {
+  collectDriveSubfolderNames,
   resolveDocumentFolderName,
   type DriveDocumentType,
 } from "@/lib/folder/document-folder-map";
@@ -246,7 +247,11 @@ export async function ensureProjectDriveFolders(
   }
 
   const subfolders: Record<string, string> = {};
-  for (const name of settings.subfolderNames) {
+  const folderNames = collectDriveSubfolderNames(
+    settings.subfolderNames,
+    settings.documentFolderMap
+  );
+  for (const name of folderNames) {
     subfolders[name] = await findOrCreateFolder(
       drive,
       projectFolderId,
@@ -339,5 +344,14 @@ export async function getDocumentSubfolderId(
     settings.documentFolderMap,
     documentType
   );
-  return getSubfolderId(tenantId, projectId, subfolderName);
+  const folders = await ensureProjectDriveFolders(tenantId, projectId);
+  if (!folders) return null;
+
+  const existing = folders.subfolders[subfolderName];
+  if (existing) return existing;
+
+  const drive = await getDriveClient();
+  if (!drive) return null;
+
+  return findOrCreateFolder(drive, folders.projectFolderId, subfolderName);
 }

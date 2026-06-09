@@ -25,7 +25,7 @@ export async function generateAndStoreSiteSurveyPdf(
     );
     if (!driveFileId) {
       throw new Error(
-        "報告書フォルダ（Google Drive）への PDF 保存に失敗しました。フォルダ設計と共有ドライブの設定を確認してください。"
+        "現地調査報告書（PDF）の Google Drive へのアップロードに失敗しました。"
       );
     }
     return { pdfGenerated: true, driveFileId };
