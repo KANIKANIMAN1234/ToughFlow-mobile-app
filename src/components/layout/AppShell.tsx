@@ -21,20 +21,19 @@ function NavTabs({
       aria-label="メインメニュー"
       className="flex shrink-0 gap-1 overflow-x-auto border-b border-surface-border bg-white px-3"
     >
-      {items.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label }) => {
         const active = pathname.startsWith(href);
         return (
           <Link
             key={href}
             href={href}
             className={cn(
-              "flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-nav-link font-normal transition-colors",
+              "flex shrink-0 items-center border-b-2 px-3 py-2.5 text-nav-link font-normal transition-colors",
               active
                 ? "border-brand-600 text-apple-text"
                 : "border-transparent text-apple-glyph hover:text-apple-text"
             )}
           >
-            <Icon className="h-4 w-4 shrink-0" />
             {label}
           </Link>
         );

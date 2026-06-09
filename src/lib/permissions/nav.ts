@@ -1,53 +1,37 @@
-import type { LucideIcon } from "lucide-react";
-import {
-  ClipboardList,
-  Clock,
-  FileText,
-  Home,
-  Map,
-  MapPin,
-  Receipt,
-} from "lucide-react";
 import type { AccessLevel } from "@/lib/types";
 import type { PermissionCode } from "./check";
 
 export type NavItemDef = {
   href: string;
   label: string;
-  icon: LucideIcon;
   permissions?: PermissionCode[];
 };
 
 export const MOBILE_NAV_ITEMS: NavItemDef[] = [
-  { href: "/home", label: "ホーム", icon: Home },
+  { href: "/home", label: "ホーム" },
   {
     href: "/attendance",
-    label: "出退勤",
-    icon: Clock,
+    label: "勤怠",
     permissions: ["attendance_register"],
   },
   {
     href: "/expenses/new",
-    label: "立替精算",
-    icon: Receipt,
+    label: "清算",
     permissions: ["expense_register"],
   },
   {
     href: "/daily-reports/new",
-    label: "作業日報",
-    icon: FileText,
+    label: "日報",
     permissions: ["daily_report_register"],
   },
   {
     href: "/site-surveys/new",
-    label: "現地調査",
-    icon: MapPin,
+    label: "現調",
     permissions: ["site_survey_register", "site_survey_view_shared"],
   },
   {
     href: "/map",
     label: "地図",
-    icon: Map,
     permissions: [
       "project_list_other",
       "daily_report_register",
@@ -57,7 +41,6 @@ export const MOBILE_NAV_ITEMS: NavItemDef[] = [
   {
     href: "/projects",
     label: "案件",
-    icon: ClipboardList,
     permissions: ["project_list_other", "daily_report_register", "site_survey_register"],
   },
 ];
