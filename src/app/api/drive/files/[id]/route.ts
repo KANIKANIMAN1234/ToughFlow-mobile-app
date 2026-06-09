@@ -26,6 +26,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           headers: {
             "Content-Type": file.mimeType,
             "Cache-Control": "private, max-age=3600",
+            "Content-Disposition":
+              file.mimeType === "application/pdf"
+                ? "inline"
+                : "attachment",
           },
         });
       } catch (e) {

@@ -298,6 +298,20 @@ export interface SiteSurveyMasters {
   tools: SiteSurveyTool[];
 }
 
+export type StoredReportType = "site_survey" | "daily_report";
+
+export interface StoredReportDocument {
+  id: string;
+  type: StoredReportType;
+  typeLabel: string;
+  title: string;
+  projectName: string;
+  userName: string;
+  documentDate: string;
+  driveFileId: string;
+  createdAt: string;
+}
+
 export interface NavItem {
   href: string;
   label: string;

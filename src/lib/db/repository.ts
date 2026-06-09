@@ -42,6 +42,7 @@ import type {
   SiteSurveyMasters,
   SiteSurveyTool,
   SiteSurveyWorkType,
+  StoredReportDocument,
   User,
   UserRole,
 } from "@/lib/types";
@@ -996,6 +997,98 @@ export async function listSiteSurveys(
   if (error) throw new Error(formatDbError(error.message));
 
   return (data ?? []).map((row) => parseSiteSurveyRow(row as never));
+}
+
+export async function listStoredReportDocuments(
+  tenantId: string,
+  options: { userId?: string; viewAll?: boolean } = {}
+): Promise<StoredReportDocument[]> {
+  const supabase = createAdminClient();
+  const { userId, viewAll = false } = options;
+
+  let surveyQuery = supabase
+    .from("t_site_survey")
+    .select(
+      "id, user_id, checklist, created_at, report_pdf_drive_id, m_project(name), m_user(name)"
+    )
+    .eq("tenant_id", tenantId)
+    .not("report_pdf_drive_id", "is", null)
+    .order("created_at", { ascending: false });
+
+  if (!viewAll && userId) {
+    surveyQuery = surveyQuery.eq("user_id", userId);
+  }
+
+  let dailyQuery = supabase
+    .from("t_daily_report")
+    .select(
+      "id, user_id, content, report_date, created_at, report_pdf_drive_id, m_project(name), m_user(name)"
+    )
+    .eq("tenant_id", tenantId)
+    .eq("status", "submitted")
+    .not("report_pdf_drive_id", "is", null)
+    .order("created_at", { ascending: false });
+
+  if (!viewAll && userId) {
+    dailyQuery = dailyQuery.eq("user_id", userId);
+  }
+
+  const [surveyRes, dailyRes] = await Promise.all([surveyQuery, dailyQuery]);
+
+  if (surveyRes.error) throw new Error(formatDbError(surveyRes.error.message));
+  if (dailyRes.error) throw new Error(formatDbError(dailyRes.error.message));
+
+  const surveys: StoredReportDocument[] = (
+    surveyRes.data ?? []
+  ).map((row) => {
+    const project = unwrapJoin(
+      row.m_project as { name: string } | { name: string }[] | null
+    );
+    const user = unwrapJoin(
+      row.m_user as { name: string } | { name: string }[] | null
+    );
+    const checklist = row.checklist as ChecklistPayload;
+    const { _meta, ...content } = checklist ?? {};
+    const siteContent = content as SiteSurveyContent;
+    return {
+      id: row.id,
+      type: "site_survey" as const,
+      typeLabel: "現地調査報告書",
+      title: siteContent.customerName || project?.name || "現地調査報告書",
+      projectName: project?.name ?? "",
+      userName: user?.name ?? "",
+      documentDate: siteContent.surveyDate?.slice(0, 10) ?? row.created_at,
+      driveFileId: row.report_pdf_drive_id as string,
+      createdAt: row.created_at,
+    };
+  });
+
+  const dailyReports: StoredReportDocument[] = (
+    dailyRes.data ?? []
+  ).map((row) => {
+    const project = unwrapJoin(
+      row.m_project as { name: string } | { name: string }[] | null
+    );
+    const user = unwrapJoin(
+      row.m_user as { name: string } | { name: string }[] | null
+    );
+    const content = row.content as DailyReportContent;
+    return {
+      id: row.id,
+      type: "daily_report" as const,
+      typeLabel: "作業日報",
+      title: content.billingClient || project?.name || "作業日報",
+      projectName: project?.name ?? "",
+      userName: user?.name ?? "",
+      documentDate: content.workDateStart?.slice(0, 10) ?? row.report_date,
+      driveFileId: row.report_pdf_drive_id as string,
+      createdAt: row.created_at,
+    };
+  });
+
+  return [...surveys, ...dailyReports].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }
 
 export async function getSiteSurvey(

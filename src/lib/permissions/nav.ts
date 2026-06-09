@@ -43,6 +43,16 @@ export const MOBILE_NAV_ITEMS: NavItemDef[] = [
     label: "案件",
     permissions: ["project_list_other", "daily_report_register", "site_survey_register"],
   },
+  {
+    href: "/reports",
+    label: "各報",
+    permissions: [
+      "site_survey_register",
+      "site_survey_view_shared",
+      "daily_report_register",
+      "daily_report_view_all",
+    ],
+  },
 ];
 
 export function filterNavByAccess(
