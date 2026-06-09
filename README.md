@@ -71,7 +71,7 @@ http://localhost:3000
 | `LINE_CHANNEL_ID` | 本番 | LINE Login |
 | `LINE_CHANNEL_SECRET` | 本番 | LINE Login |
 | `LINE_CALLBACK_URL` | 本番 | OAuth コールバック URL |
-| `OPENAI_API_KEY` | 将来 | OCR・音声整形（未連携） |
+| `OPENAI_API_KEY` | 推奨 | OCR（領収書）・Whisper 文字起こし・GPT 音声整形 |
 
 ## ディレクトリ構成
 

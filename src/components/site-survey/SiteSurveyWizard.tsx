@@ -218,6 +218,7 @@ export function SiteSurveyWizard() {
                 workSteps: v.split("\n"),
               }))
             }
+            formatContext="site_survey_work_steps"
           />
           <VoiceInputTextarea
             label="注意点"
@@ -229,6 +230,7 @@ export function SiteSurveyWizard() {
                 precautions: v.split("\n"),
               }))
             }
+            formatContext="site_survey_precautions"
           />
         </Card>
       )}

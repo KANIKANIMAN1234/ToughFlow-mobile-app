@@ -103,7 +103,7 @@ export async function getConfigStatus(): Promise<ConfigStatus> {
       ok: openaiConfigured,
       hint: openaiConfigured
         ? undefined
-        : "OPENAI_API_KEY を設定（未設定時は OCR がデモ値で動作）",
+        : "OPENAI_API_KEY を設定（未設定時は OCR デモ・Whisper 不可・AI 整形は原文のまま）",
     },
     googleDrive: {
       configured: driveConfigured,

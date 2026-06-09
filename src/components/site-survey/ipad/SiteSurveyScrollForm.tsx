@@ -545,6 +545,7 @@ export function SiteSurveyScrollForm({
                   }))
                 }
                 placeholder="1行1項目"
+                formatContext="site_survey_work_steps"
                 textareaClassName="min-h-[160px] resize-y rounded-none border border-slate-300 p-2 text-xs leading-relaxed"
               />
             </div>
@@ -559,6 +560,7 @@ export function SiteSurveyScrollForm({
                   }))
                 }
                 placeholder="1行1項目"
+                formatContext="site_survey_precautions"
                 textareaClassName="min-h-[160px] resize-y rounded-none border border-slate-300 p-2 text-xs leading-relaxed"
               />
             </div>

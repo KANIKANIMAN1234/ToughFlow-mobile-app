@@ -1,20 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Camera, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { ExpenseListSection } from "@/components/expense/ExpenseListSection";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { useApi } from "@/hooks/useApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api/client";
-import type { ExpenseCategory, Project } from "@/lib/types";
+import type { Expense, ExpenseCategory, Project } from "@/lib/types";
 import { todayISO } from "@/lib/utils";
 
 export function ExpenseForm() {
-  const router = useRouter();
   const { user } = useAuth();
+  const { data, isLoading, mutate } = useApi<{ expenses: Expense[] }>(
+    user ? `/api/expenses?userId=${user.id}` : null
+  );
+  const expenses = data?.expenses ?? [];
+  const draftCount = expenses.filter((e) => e.status === "draft").length;
+  const [batchSubmitting, setBatchSubmitting] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [projectId, setProjectId] = useState("");
@@ -111,14 +117,33 @@ export function ExpenseForm() {
       } else {
         await api.post("/api/expenses", payload);
       }
-      router.push("/expenses");
+      setAmount("");
+      setMemo("");
+      setExpenseDate(todayISO());
+      setInputMethod("manual");
+      setReceiptFile(null);
+      if (receiptPreview) URL.revokeObjectURL(receiptPreview);
+      setReceiptPreview(null);
+      await mutate();
     } finally {
       setSubmitting(false);
     }
   }
 
+  async function handleBatchSubmit() {
+    if (!user || draftCount === 0) return;
+    setBatchSubmitting(true);
+    try {
+      await api.post("/api/expenses/submit-batch", {});
+      await mutate();
+    } finally {
+      setBatchSubmitting(false);
+    }
+  }
+
   return (
     <AppShell title="立替精算登録">
+      <div className="pb-24">
       <Card title="領収書">
         <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50 px-4 py-8">
           {ocrLoading ? (
@@ -212,7 +237,27 @@ export function ExpenseForm() {
         </div>
       </Card>
 
-      <div className="fixed bottom-0 left-0 right-0 mx-auto flex max-w-mobile gap-2 border-t bg-white p-4">
+        {draftCount > 0 && (
+          <Button
+            variant="secondary"
+            fullWidth
+            className="mt-4"
+            disabled={batchSubmitting || submitting}
+            onClick={() => void handleBatchSubmit()}
+          >
+            {batchSubmitting
+              ? "提出中…"
+              : `月末一括提出（下書き ${draftCount}件）`}
+          </Button>
+        )}
+
+        <ExpenseListSection
+          expenses={expenses}
+          isLoading={isLoading && !data}
+        />
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto flex max-w-mobile gap-2 border-t bg-white p-4">
         <Button
           variant="secondary"
           disabled={submitting || !amount}

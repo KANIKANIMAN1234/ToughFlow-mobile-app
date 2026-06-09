@@ -18,6 +18,7 @@ import {
   PaperPage,
   YesNo,
 } from "@/components/site-survey/ipad/FormPrimitives";
+import { VoiceInputTextarea } from "@/components/ui/VoiceInputTextarea";
 
 type Props = {
   projects: Project[];
@@ -622,14 +623,14 @@ export function DailyReportScrollForm({
           </div>
 
           {/* 備考 */}
-          <div className="mt-1 flex-1 border border-slate-800">
-            <textarea
+          <div className="mt-1 flex-1 border border-slate-800 p-1">
+            <VoiceInputTextarea
+              header={<p className="text-[10px] font-medium">備考・特記</p>}
               value={content.remarks ?? ""}
-              onChange={(e) =>
-                setContent((c) => ({ ...c, remarks: e.target.value }))
-              }
-              className="min-h-[72px] w-full resize-y border-0 bg-[repeating-linear-gradient(transparent,transparent_1.4rem,#e2e8f0_1.4rem,#e2e8f0_1.45rem)] px-2 py-1 text-[11px] leading-[1.45rem] outline-none"
+              onChange={(v) => setContent((c) => ({ ...c, remarks: v }))}
               placeholder="備考・特記"
+              formatContext="daily_report_remarks"
+              textareaClassName="min-h-[72px] resize-y rounded-none border-0 bg-[repeating-linear-gradient(transparent,transparent_1.4rem,#e2e8f0_1.4rem,#e2e8f0_1.45rem)] px-2 py-1 text-[11px] leading-[1.45rem]"
             />
           </div>
 

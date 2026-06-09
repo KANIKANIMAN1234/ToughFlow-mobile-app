@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { StepIndicator } from "@/components/ui/StepIndicator";
-import { Textarea } from "@/components/ui/Textarea";
+import { VoiceInputTextarea } from "@/components/ui/VoiceInputTextarea";
 import { useDailyReportWizard } from "@/hooks/useDailyReportWizard";
 import { WizardLoadState } from "@/components/ui/WizardLoadState";
 import { circleNumber, cn } from "@/lib/utils";
@@ -301,13 +301,12 @@ export function DailyReportWizard() {
 
       {step === 5 && (
         <Card title="備考">
-          <Textarea
+          <VoiceInputTextarea
             label="備考・特記"
             value={content.remarks ?? ""}
-            onChange={(e) =>
-              setContent((c) => ({ ...c, remarks: e.target.value }))
-            }
-            placeholder="音声入力結果や現場メモ"
+            onChange={(v) => setContent((c) => ({ ...c, remarks: v }))}
+            placeholder="音声入力・録音後に AI 整形できます"
+            formatContext="daily_report_remarks"
           />
         </Card>
       )}

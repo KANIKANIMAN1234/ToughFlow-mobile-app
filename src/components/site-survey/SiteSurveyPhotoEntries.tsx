@@ -113,6 +113,7 @@ export function SiteSurveyPhotoEntries({
                 })
               }
               placeholder="撮影内容・箇所・注意点など"
+              formatContext="site_survey_caption"
               textareaClassName={cn(
                 "w-full resize-y rounded-none border border-slate-300 p-2 leading-relaxed",
                 isPaper
