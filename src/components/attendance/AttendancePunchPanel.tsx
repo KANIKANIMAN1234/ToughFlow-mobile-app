@@ -30,6 +30,9 @@ type Props = {
   isLoading: boolean;
   onPunch: (type: AttendancePunchType) => Promise<void>;
   layout?: "grid" | "compact";
+  /** iPad 左カラム用: 打刻コントロールのみ */
+  controlOnly?: boolean;
+  badgeVariant?: "default" | "tablet";
 };
 
 type PunchButtonConfig = {
@@ -76,6 +79,8 @@ export function AttendancePunchPanel({
   isLoading,
   onPunch,
   layout = "grid",
+  controlOnly = false,
+  badgeVariant = "default",
 }: Props) {
   const [submitting, setSubmitting] = useState<AttendancePunchType | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -120,67 +125,81 @@ export function AttendancePunchPanel({
     );
   }
 
-  return (
-    <div className="space-y-4">
-      <section className="rounded-2xl border border-surface-border bg-white p-5 shadow-sm">
-        <p className="text-center text-caption text-apple-glyph">
-          {status?.workDate
-            ? formatWorkDateJa(status.workDate)
-            : formatWorkDateJa(
-                new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(
-                  now
-                )
+  const controlCard = (
+    <section className="rounded-2xl border border-surface-border bg-white p-5 shadow-sm">
+      <p className="text-center text-caption text-apple-glyph">
+        {status?.workDate
+          ? formatWorkDateJa(status.workDate)
+          : formatWorkDateJa(
+              new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(
+                now
+              )
+            )}
+      </p>
+
+      <p
+        className="mt-3 text-center font-mono text-[2.75rem] font-bold leading-none tracking-tight text-apple-text"
+        aria-live="polite"
+      >
+        {formatClockTime(now)}
+      </p>
+
+      <div className="mt-4 flex justify-center">
+        <span className="rounded-full bg-slate-100 px-4 py-1.5 text-caption text-apple-glyph">
+          {status
+            ? getStatusBadgeText(
+                status.state,
+                status.punches,
+                badgeVariant
+              )
+            : "読み込み中…"}
+        </span>
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        {PUNCH_BUTTON_CONFIG.map(({ type, label, icon: Icon, enabled, disabled }) => {
+          const isEnabled =
+            allowed.has(type) && !isLoading && submitting === null;
+          return (
+            <button
+              key={type}
+              type="button"
+              disabled={!isEnabled}
+              onClick={() => handlePunch(type)}
+              className={cn(
+                "flex min-h-[5.5rem] flex-col items-center justify-center gap-2 rounded-2xl font-medium transition-transform focus-apple",
+                isEnabled ? enabled : disabled,
+                isEnabled && "active:scale-[0.98]",
+                !isEnabled && "cursor-not-allowed opacity-80"
               )}
-        </p>
+            >
+              <Icon className="h-7 w-7" strokeWidth={1.75} />
+              <span className="text-body">
+                {submitting === type ? "打刻中…" : label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-        <p
-          className="mt-3 text-center font-mono text-[2.75rem] font-bold leading-none tracking-tight text-apple-text"
-          aria-live="polite"
-        >
-          {formatClockTime(now)}
-        </p>
-
-        <div className="mt-4 flex justify-center">
-          <span className="rounded-full bg-slate-100 px-4 py-1.5 text-caption text-apple-glyph">
-            {status
-              ? getStatusBadgeText(status.state, status.punches)
-              : "読み込み中…"}
-          </span>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          {PUNCH_BUTTON_CONFIG.map(({ type, label, icon: Icon, enabled, disabled }) => {
-            const isEnabled =
-              allowed.has(type) && !isLoading && submitting === null;
-            return (
-              <button
-                key={type}
-                type="button"
-                disabled={!isEnabled}
-                onClick={() => handlePunch(type)}
-                className={cn(
-                  "flex min-h-[5.5rem] flex-col items-center justify-center gap-2 rounded-2xl font-medium transition-transform focus-apple",
-                  isEnabled ? enabled : disabled,
-                  isEnabled && "active:scale-[0.98]",
-                  !isEnabled && "cursor-not-allowed opacity-80"
-                )}
-              >
-                <Icon className="h-7 w-7" strokeWidth={1.75} />
-                <span className="text-body">
-                  {submitting === type ? "打刻中…" : label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
+      {!controlOnly && (
         <div className="mt-5 rounded-xl bg-slate-50 px-4 py-3 text-center">
           <p className="text-caption text-apple-glyph">本日の実労働時間</p>
           <p className="mt-1 text-xl font-bold text-apple-text">
             {formatWorkDuration(workMinutes)}
           </p>
         </div>
-      </section>
+      )}
+    </section>
+  );
+
+  if (controlOnly) {
+    return controlCard;
+  }
+
+  return (
+    <div className="space-y-4">
+      {controlCard}
 
       <section className="rounded-2xl border border-surface-border bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center gap-2">

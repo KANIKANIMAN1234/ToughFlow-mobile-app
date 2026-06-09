@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
+import { AttendanceMonthlyList } from "@/components/attendance/AttendanceMonthlyList";
 import { AttendancePunchPanel } from "@/components/attendance/AttendancePunchPanel";
 import { CardListSkeleton } from "@/components/ui/Skeleton";
 import { useApi } from "@/hooks/useApi";
@@ -11,6 +13,7 @@ import type { AttendancePunchType, AttendanceStatus } from "@/lib/types";
 export default function AttendancePage() {
   const { user, authLoading } = useAuthGuard();
   const { isTablet } = useDisplayMode();
+  const [historyRefresh, setHistoryRefresh] = useState(0);
   const { data, isLoading, mutate } = useApi<{ status: AttendanceStatus }>(
     user ? "/api/attendance" : null
   );
@@ -27,6 +30,7 @@ export default function AttendancePage() {
       throw new Error(body.error ?? "打刻に失敗しました");
     }
     await mutate({ status: body.status }, false);
+    setHistoryRefresh((value) => value + 1);
   }
 
   if (authLoading || !user) {
@@ -37,20 +41,33 @@ export default function AttendancePage() {
     );
   }
 
+  const punchPanel = (
+    <AttendancePunchPanel
+      status={data?.status}
+      isLoading={isLoading}
+      onPunch={handlePunch}
+      layout="grid"
+      controlOnly={isTablet}
+      badgeVariant={isTablet ? "tablet" : "default"}
+    />
+  );
+
   return (
     <AppShell title="出退勤">
-      <div className={isTablet ? "mx-auto max-w-[480px]" : undefined}>
-        {isLoading && !data ? (
-          <CardListSkeleton />
-        ) : (
-          <AttendancePunchPanel
-            status={data?.status}
-            isLoading={isLoading}
-            onPunch={handlePunch}
-            layout="grid"
+      {isLoading && !data ? (
+        <CardListSkeleton />
+      ) : isTablet ? (
+        <div className="flex min-h-0 flex-1 gap-5">
+          <div className="w-[22rem] shrink-0">{punchPanel}</div>
+          <AttendanceMonthlyList
+            currentUserId={user.id}
+            refreshToken={historyRefresh}
+            todayPunches={data?.status?.punches}
           />
-        )}
-      </div>
+        </div>
+      ) : (
+        <div>{punchPanel}</div>
+      )}
     </AppShell>
   );
 }

@@ -159,6 +159,15 @@ export interface AttendanceStatus {
   allowedTypes: AttendancePunchType[];
 }
 
+export interface AttendanceHistoryEntry extends AttendancePunch {
+  userName: string;
+}
+
+export type AttendanceStaffOption = {
+  id: string;
+  name: string;
+};
+
 export interface CompanyInfo {
   name: string;
   address: string;
