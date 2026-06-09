@@ -29,6 +29,12 @@ export const DEFAULT_DRIVE_FOLDER_MAPPINGS: DriveFolderMappings = {
   invoice: "請求",
 };
 
+export function mergeDocumentFolderMap(
+  partial: Partial<DriveFolderMappings> | null | undefined
+): DriveFolderMappings {
+  return { ...DEFAULT_DRIVE_FOLDER_MAPPINGS, ...partial };
+}
+
 export function parseDocumentFolderMap(raw: unknown): DriveFolderMappings {
   if (!raw || typeof raw !== "object") {
     return { ...DEFAULT_DRIVE_FOLDER_MAPPINGS };
@@ -77,4 +83,32 @@ export function normalizeFolderSubfolderNames(
     if (name.trim()) names.add(name.trim());
   }
   return [...names];
+}
+
+export function buildFolderSettingsForDrive(input: {
+  driveRootFolderId?: string | null;
+  projectNamePattern?: string | null;
+  subfolderNames?: string[] | null;
+  documentFolderMap?: Partial<DriveFolderMappings> | null;
+}): {
+  driveRootFolderId: string;
+  projectNamePattern: string;
+  subfolderNames: string[];
+  documentFolderMap: DriveFolderMappings;
+} {
+  const resolvedSubfolders =
+    Array.isArray(input.subfolderNames) && input.subfolderNames.length > 0
+      ? input.subfolderNames.filter(Boolean)
+      : Object.values(DEFAULT_DRIVE_FOLDER_MAPPINGS);
+  const documentFolderMap = syncMappingsToSubfolders(
+    resolvedSubfolders,
+    mergeDocumentFolderMap(input.documentFolderMap)
+  );
+
+  return {
+    driveRootFolderId: input.driveRootFolderId ?? "",
+    projectNamePattern: input.projectNamePattern ?? "{date}_{name}",
+    subfolderNames: normalizeFolderSubfolderNames(resolvedSubfolders, documentFolderMap),
+    documentFolderMap,
+  };
 }
