@@ -6,6 +6,10 @@ import {
   updateCustomerDriveFolderId,
   updateProjectDriveFolderId,
 } from "@/lib/db/repository";
+import {
+  resolveDocumentFolderName,
+  type DriveDocumentType,
+} from "@/lib/folder/document-folder-map";
 import { getDriveClient, getDriveRootFolderIdFallback, isDriveConfigured } from "./client";
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
@@ -323,4 +327,17 @@ export async function getSubfolderId(
 ): Promise<string | null> {
   const folders = await ensureProjectDriveFolders(tenantId, projectId);
   return folders?.subfolders[subfolderName] ?? null;
+}
+
+export async function getDocumentSubfolderId(
+  tenantId: string,
+  projectId: string,
+  documentType: DriveDocumentType
+): Promise<string | null> {
+  const settings = await getFolderSettingsForDrive(tenantId);
+  const subfolderName = resolveDocumentFolderName(
+    settings.documentFolderMap,
+    documentType
+  );
+  return getSubfolderId(tenantId, projectId, subfolderName);
 }

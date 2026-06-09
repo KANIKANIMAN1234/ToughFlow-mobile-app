@@ -1,6 +1,6 @@
 import { getSitePhotoEntries } from "@/lib/site-survey/photos";
 import type { SiteSurveyContent } from "@/lib/types";
-import { getSubfolderId, uploadFileToDrive } from "./drive";
+import { getDocumentSubfolderId, uploadFileToDrive } from "./drive";
 
 function mimeToExt(mimeType: string): string {
   if (mimeType.includes("png")) return "png";
@@ -36,7 +36,11 @@ export async function uploadSiteSurveyPhotos(
     return { content, driveFileIds: [] };
   }
 
-  const folderId = await getSubfolderId(tenantId, projectId, "現地調査");
+  const folderId = await getDocumentSubfolderId(
+    tenantId,
+    projectId,
+    "site_survey_photo"
+  );
   if (!folderId) {
     return { content, driveFileIds: [] };
   }

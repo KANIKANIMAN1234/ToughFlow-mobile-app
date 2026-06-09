@@ -4,7 +4,7 @@ import {
   updateSiteSurveyPdfRef,
 } from "@/lib/db/repository";
 import type { Expense } from "@/lib/types";
-import { getSubfolderId, uploadFileToDrive } from "./drive";
+import { getDocumentSubfolderId, uploadFileToDrive } from "./drive";
 
 function receiptFileName(
   expense: Pick<Expense, "expenseDate" | "amount" | "categoryName">,
@@ -27,7 +27,7 @@ export async function uploadExpenseReceipt(
   expense: Expense,
   file: { buffer: Buffer; mimeType: string }
 ): Promise<string | null> {
-  const folderId = await getSubfolderId(tenantId, expense.projectId, "経費");
+  const folderId = await getDocumentSubfolderId(tenantId, expense.projectId, "expense");
   if (!folderId) return null;
 
   const ext = mimeToExt(file.mimeType);
@@ -53,7 +53,7 @@ export async function uploadDailyReportPdf(
   fileName: string,
   pdf: Buffer
 ): Promise<string | null> {
-  const folderId = await getSubfolderId(tenantId, projectId, "日報");
+  const folderId = await getDocumentSubfolderId(tenantId, projectId, "daily_report");
   if (!folderId) return null;
 
   const driveFileId = await uploadFileToDrive(
@@ -77,7 +77,11 @@ export async function uploadSiteSurveyReportPdf(
   fileName: string,
   pdf: Buffer
 ): Promise<string | null> {
-  const folderId = await getSubfolderId(tenantId, projectId, "報告書");
+  const folderId = await getDocumentSubfolderId(
+    tenantId,
+    projectId,
+    "site_survey_report"
+  );
   if (!folderId) return null;
 
   const driveFileId = await uploadFileToDrive(

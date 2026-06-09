@@ -4,6 +4,13 @@ import {
   validatePunchTransition,
   workDateJST,
 } from "@/lib/attendance/state";
+import {
+  DEFAULT_DRIVE_FOLDER_MAPPINGS,
+  normalizeFolderSubfolderNames,
+  parseDocumentFolderMap,
+  syncMappingsToSubfolders,
+  type DriveFolderMappings,
+} from "@/lib/folder/document-folder-map";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getDbClient } from "@/lib/supabase/context";
 import { formatDbError } from "@/lib/db/errors";
@@ -413,20 +420,13 @@ export async function updateDailyReportPdfRef(
   if (error) throw new Error(error.message);
 }
 
-const DEFAULT_SUBFOLDERS = [
-  "経費",
-  "日報",
-  "現地調査",
-  "報告書",
-  "見積",
-  "作業完了報告",
-  "請求",
-];
+const DEFAULT_SUBFOLDERS = Object.values(DEFAULT_DRIVE_FOLDER_MAPPINGS);
 
 export type FolderSettingsForDrive = {
   driveRootFolderId: string;
   projectNamePattern: string;
   subfolderNames: string[];
+  documentFolderMap: DriveFolderMappings;
 };
 
 export type ProjectDriveInfo = {
@@ -451,7 +451,7 @@ export async function getFolderSettingsForDrive(
       .maybeSingle(),
     supabase
       .from("m_folder_template")
-      .select("subfolder_names, project_name_pattern")
+      .select("subfolder_names, project_name_pattern, document_folder_map")
       .eq("tenant_id", tenantId)
       .maybeSingle(),
   ]);
@@ -460,13 +460,23 @@ export async function getFolderSettingsForDrive(
   if (templateRes.error) throw new Error(templateRes.error.message);
 
   const subfolders = templateRes.data?.subfolder_names;
+  const subfolderNames = Array.isArray(subfolders)
+    ? (subfolders as string[])
+    : DEFAULT_SUBFOLDERS;
+  const documentFolderMap = syncMappingsToSubfolders(
+    subfolderNames,
+    parseDocumentFolderMap(templateRes.data?.document_folder_map)
+  );
+
   return {
     driveRootFolderId: tenantRes.data?.drive_root_folder_id ?? "",
     projectNamePattern:
       templateRes.data?.project_name_pattern ?? "{date}_{name}",
-    subfolderNames: Array.isArray(subfolders)
-      ? (subfolders as string[])
-      : DEFAULT_SUBFOLDERS,
+    subfolderNames: normalizeFolderSubfolderNames(
+      subfolderNames,
+      documentFolderMap
+    ),
+    documentFolderMap,
   };
 }
 
