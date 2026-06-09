@@ -1248,7 +1248,6 @@ export async function listAssignableUsers(
     .select("id, name, role")
     .eq("tenant_id", tenantId)
     .eq("is_active", true)
-    .eq("role", "field")
     .order("name");
 
   if (error) throw new Error(error.message);
@@ -1265,8 +1264,19 @@ export async function createProjectWithAssignments(
 ): Promise<Project> {
   if (!input.name.trim()) throw new Error("案件名を入力してください");
   if (!input.customerId) throw new Error("顧客を選択してください");
-  if (!input.assigneeUserIds.length) {
+  if (!input.assignments.length) {
     throw new Error("担当者を1名以上選択してください");
+  }
+
+  const userIds = input.assignments.map((a) => a.userId);
+  if (userIds.some((id) => !id)) {
+    throw new Error("担当者を選択してください");
+  }
+  if (new Set(userIds).size !== userIds.length) {
+    throw new Error("同じ担当者が重複しています");
+  }
+  if (!input.assignments.some((a) => a.assignmentRole === "main")) {
+    throw new Error("メイン担当者を1名以上指定してください");
   }
 
   const supabase = createAdminClient();
@@ -1287,10 +1297,11 @@ export async function createProjectWithAssignments(
 
   if (error) throw new Error(formatDbError(error.message));
 
-  const assignments = input.assigneeUserIds.map((userId) => ({
+  const assignments = input.assignments.map((assignment) => ({
     tenant_id: tenantId,
     project_id: project.id as string,
-    user_id: userId,
+    user_id: assignment.userId,
+    assignment_role: assignment.assignmentRole,
   }));
 
   const { error: assignError } = await supabase

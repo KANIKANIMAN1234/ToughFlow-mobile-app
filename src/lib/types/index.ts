@@ -61,11 +61,18 @@ export interface AssignableUser {
   role: UserRole;
 }
 
+export type ProjectAssignmentRole = "main" | "sub";
+
+export type ProjectAssignmentInput = {
+  userId: string;
+  assignmentRole: ProjectAssignmentRole;
+};
+
 export type CreateProjectInput = {
   name: string;
   customerId: string;
   workStartDate?: string;
-  assigneeUserIds: string[];
+  assignments: ProjectAssignmentInput[];
 };
 
 export interface MachineRow {

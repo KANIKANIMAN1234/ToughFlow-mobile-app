@@ -10,8 +10,38 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { api } from "@/lib/api/client";
-import type { AssignableUser, CustomerOption } from "@/lib/types";
+import { ROLE_LABELS } from "@/lib/permissions/defaults";
+import type {
+  AssignableUser,
+  CustomerOption,
+  ProjectAssignmentRole,
+} from "@/lib/types";
 import { todayISO } from "@/lib/utils";
+
+const ASSIGNMENT_ROLE_OPTIONS: { value: ProjectAssignmentRole; label: string }[] =
+  [
+    { value: "main", label: "メイン" },
+    { value: "sub", label: "サブ" },
+  ];
+
+type AssignmentRow = {
+  key: string;
+  userId: string;
+  assignmentRole: ProjectAssignmentRole;
+};
+
+function createAssignmentRow(
+  assignmentRole: ProjectAssignmentRole = "main"
+): AssignmentRow {
+  return {
+    key: crypto.randomUUID(),
+    userId: "",
+    assignmentRole,
+  };
+}
+
+const selectClassName =
+  "focus-apple w-full rounded-xl border border-surface-border bg-white px-3 py-2.5 text-body";
 
 export function ProjectRegisterForm() {
   const router = useRouter();
@@ -22,7 +52,9 @@ export function ProjectRegisterForm() {
   const [name, setName] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [workStartDate, setWorkStartDate] = useState(todayISO());
-  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [assignmentRows, setAssignmentRows] = useState<AssignmentRow[]>([
+    createAssignmentRow("main"),
+  ]);
 
   useEffect(() => {
     api
@@ -40,13 +72,35 @@ export function ProjectRegisterForm() {
       .finally(() => setLoading(false));
   }, []);
 
-  function toggleAssignee(userId: string) {
-    setSelectedAssignees((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+  function updateAssignmentRow(
+    key: string,
+    patch: Partial<Pick<AssignmentRow, "userId" | "assignmentRole">>
+  ) {
+    setAssignmentRows((prev) =>
+      prev.map((row) => (row.key === key ? { ...row, ...patch } : row))
     );
   }
+
+  function addAssignmentRow() {
+    setAssignmentRows((prev) => [...prev, createAssignmentRow("sub")]);
+  }
+
+  function removeAssignmentRow(key: string) {
+    setAssignmentRows((prev) =>
+      prev.length <= 1 ? prev : prev.filter((row) => row.key !== key)
+    );
+  }
+
+  const usedUserIds = new Set(
+    assignmentRows.map((row) => row.userId).filter(Boolean)
+  );
+
+  const isFormValid =
+    name.trim() &&
+    customerId &&
+    assignmentRows.length > 0 &&
+    assignmentRows.every((row) => row.userId) &&
+    assignmentRows.some((row) => row.assignmentRole === "main");
 
   async function handleSubmit() {
     setSubmitting(true);
@@ -59,7 +113,10 @@ export function ProjectRegisterForm() {
         name,
         customerId,
         workStartDate,
-        assigneeUserIds: selectedAssignees,
+        assignments: assignmentRows.map((row) => ({
+          userId: row.userId,
+          assignmentRole: row.assignmentRole,
+        })),
       });
 
       let message = `案件「${result.project.name}」を登録しました。`;
@@ -99,7 +156,7 @@ export function ProjectRegisterForm() {
               <select
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
-                className="focus-apple w-full rounded-xl border border-surface-border bg-white px-3 py-2.5 text-body"
+                className={selectClassName}
               >
                 {customers.length === 0 ? (
                   <option value="">顧客が登録されていません</option>
@@ -124,28 +181,81 @@ export function ProjectRegisterForm() {
 
         <Card title="担当者割り当て">
           <p className="mb-3 text-caption text-apple-glyph">
-            選択した担当者に案件が紐づき、Google Drive
-            フォルダが作成されます。現場スタッフは割り当てられた案件のみ閲覧できます。
+            管理者・部長・現場スタッフなど全スタッフから担当者を選び、メインまたはサブとして割り当てます。Google
+            Drive フォルダが作成され、割り当てられたスタッフが案件を閲覧できます。
           </p>
           {assignees.length === 0 ? (
             <p className="text-caption text-apple-glyph">
-              割り当て可能な現場スタッフがいません。
+              割り当て可能なスタッフがいません。
             </p>
           ) : (
-            <div className="space-y-2">
-              {assignees.map((user) => (
-                <label
-                  key={user.id}
-                  className="flex items-center gap-3 rounded-xl border border-surface-border px-3 py-2.5"
+            <div className="space-y-3">
+              {assignmentRows.map((row) => (
+                <div
+                  key={row.key}
+                  className="grid gap-2 rounded-xl border border-surface-border p-3 sm:grid-cols-[1fr_auto_auto]"
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedAssignees.includes(user.id)}
-                    onChange={() => toggleAssignee(user.id)}
-                  />
-                  <span className="text-body text-apple-text">{user.name}</span>
-                </label>
+                  <label className="block space-y-1.5">
+                    <span className="text-caption font-medium text-apple-text">
+                      スタッフ
+                    </span>
+                    <select
+                      value={row.userId}
+                      onChange={(e) =>
+                        updateAssignmentRow(row.key, { userId: e.target.value })
+                      }
+                      className={selectClassName}
+                    >
+                      <option value="">選択してください</option>
+                      {assignees.map((user) => (
+                        <option
+                          key={user.id}
+                          value={user.id}
+                          disabled={
+                            user.id !== row.userId && usedUserIds.has(user.id)
+                          }
+                        >
+                          {user.name}（{ROLE_LABELS[user.role]}）
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block space-y-1.5">
+                    <span className="text-caption font-medium text-apple-text">
+                      区分
+                    </span>
+                    <select
+                      value={row.assignmentRole}
+                      onChange={(e) =>
+                        updateAssignmentRow(row.key, {
+                          assignmentRole: e.target.value as ProjectAssignmentRole,
+                        })
+                      }
+                      className={selectClassName}
+                    >
+                      {ASSIGNMENT_ROLE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      fullWidth
+                      disabled={assignmentRows.length <= 1}
+                      onClick={() => removeAssignmentRow(row.key)}
+                    >
+                      削除
+                    </Button>
+                  </div>
+                </div>
               ))}
+              <Button type="button" variant="secondary" onClick={addAssignmentRow}>
+                担当者を追加
+              </Button>
             </div>
           )}
         </Card>
@@ -155,12 +265,7 @@ export function ProjectRegisterForm() {
       <FixedActionBar>
         <Button
           fullWidth
-          disabled={
-            submitting ||
-            !name.trim() ||
-            !customerId ||
-            selectedAssignees.length === 0
-          }
+          disabled={submitting || !isFormValid}
           onClick={handleSubmit}
         >
           {submitting ? "登録中…" : "案件を登録"}
