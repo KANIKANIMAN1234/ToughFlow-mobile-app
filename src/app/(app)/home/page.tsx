@@ -110,13 +110,7 @@ export default function HomePage() {
 
   return (
     <AppShell title="ホーム">
-      <Card title={`こんにちは、${user.name} さん`}>
-        <p className="text-caption text-apple-glyph">
-          今日の現場作業を記録しましょう。30秒で操作できるクイックアクションから選べます。
-        </p>
-      </Card>
-
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {shortcuts.map(({ href, label, desc, icon: Icon, color }) => (
           <Link
             key={href}
