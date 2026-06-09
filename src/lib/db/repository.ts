@@ -825,7 +825,7 @@ export async function listExpenses(
   let query = supabase
     .from("t_expense")
     .select(
-      "id, project_id, user_id, amount, category_id, expense_date, status, input_method, created_at, m_project(name), m_user(name), m_expense_category(name)"
+      "id, project_id, user_id, amount, category_id, expense_date, status, input_method, created_at, m_project(name), m_user!user_id(name), m_expense_category(name)"
     )
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
