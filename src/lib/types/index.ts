@@ -285,3 +285,134 @@ export interface NavItem {
   icon: string;
   roles?: UserRole[];
 }
+
+export type ShareNotifyMethod = "default" | "email" | "line" | "both";
+
+export type StaffType =
+  | "unclassified"
+  | "full_time"
+  | "contract"
+  | "temporary"
+  | "part_time";
+
+export type PrescribedWorkDaysType = "unset" | "week" | "year";
+
+export interface StaffProfile {
+  lastName: string;
+  firstName: string;
+  email?: string;
+  phone?: string;
+  birthDate?: string;
+  staffCode?: string;
+  staffType: StaffType;
+  hourlyWage?: number | null;
+  prescribedWorkDaysType?: PrescribedWorkDaysType;
+  prescribedWorkHours: number;
+  prescribedWorkMinutes: number;
+  transportationAllowance?: number | null;
+  joinDate?: string;
+  remark1?: string;
+  remark2?: string;
+  remark3?: string;
+  tags?: string;
+}
+
+export interface TenantUser {
+  id: string;
+  name: string;
+  role: UserRole;
+  email?: string;
+  shareNotifyMethod?: ShareNotifyMethod;
+  lineUserId?: string;
+}
+
+export interface TenantStaff extends TenantUser, StaffProfile {}
+
+export type EmploymentScheduledCalcType =
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "yearly"
+  | "shift";
+
+export type EmploymentOvertimeCalcType = string;
+
+export interface EmploymentWorkRuleInput {
+  groupKey: string;
+  staffType: StaffType | null;
+  scheduledCalcType: EmploymentScheduledCalcType;
+  scheduledLimitHours: number;
+  scheduledLimitMinutes: number;
+  overtimeRatePercent: number;
+  overtimeCalcType: EmploymentOvertimeCalcType;
+  overtimeDayThresholdHours: number;
+  overtimeDayThresholdMinutes: number;
+  overtimeWeekThresholdHours: number;
+  overtimeWeekThresholdMinutes: number;
+  deemedOvertimeEnabled: boolean;
+  deemedOvertimeHours: number;
+  deemedOvertimeMinutes: number;
+  excludeStatutoryHolidays: boolean;
+  lateNightRatePercent: number;
+  lateNightStartHour: number;
+  lateNightStartMinute: number;
+  lateNightEndHour: number;
+  lateNightEndMinute: number;
+  includeEarlyMorningInLateNight: boolean;
+}
+
+export interface EmploymentWorkRule extends EmploymentWorkRuleInput {
+  id: string;
+  tenantId: string;
+  updatedAt: string;
+}
+
+export type Agreement36Version = "new" | "old";
+
+export interface Agreement36GlobalInput {
+  isEnabled: boolean;
+  startMonth: number;
+  startDay: number;
+  agreementVersion: Agreement36Version;
+}
+
+export interface Agreement36FiscalInput {
+  fiscalYear: number;
+  specialDailyHours: number;
+  specialMonthlyHours: number;
+  specialExceedCount: number;
+  specialYearlyHours: number;
+  alertDailyEnabled: boolean;
+  alertDailyHours: number;
+  alertWeeklyEnabled: boolean;
+  alertWeeklyHours: number;
+  alertMonthlyEnabled: boolean;
+  alertMonthlyHours: number;
+  alertAvg26Enabled: boolean;
+  alertAvg26Hours: number;
+  alertYearlyEnabled: boolean;
+  alertYearlyHours: number;
+  alertExceedCountEnabled: boolean;
+  alertExceedCount: number;
+  notifyEmployee: boolean;
+  notifyAdmin: boolean;
+  notifyCustom: boolean;
+  notifyCustomUserId: string | null;
+  notifyCustomEmail: string;
+  notifyEmployeeLine: boolean;
+  notifyAdminLine: boolean;
+  notifyCustomLine: boolean;
+  notifyCustomLineUserId: string | null;
+}
+
+export interface Agreement36Global extends Agreement36GlobalInput {
+  id: string;
+  tenantId: string;
+  updatedAt: string;
+}
+
+export interface Agreement36Fiscal extends Agreement36FiscalInput {
+  id: string;
+  tenantId: string;
+  updatedAt: string;
+}

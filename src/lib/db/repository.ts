@@ -1315,3 +1315,11 @@ export async function createProjectWithAssignments(
 
   return mapProject(project as DbProjectRow);
 }
+
+export {
+  getAgreement36Settings,
+  getTenantAdminUser,
+  listActiveTenantIds,
+  listEmploymentWorkRules,
+  listTenantStaff,
+} from "./agreement36-repository";

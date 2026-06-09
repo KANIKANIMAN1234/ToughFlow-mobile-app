@@ -34,6 +34,26 @@ export function formatPunchTime(iso: string): string {
   }).format(new Date(iso));
 }
 
+export function formatDurationMinutes(minutes: number): string {
+  if (minutes <= 0) return "0分";
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins}分`;
+  if (mins === 0) return `${hours}時間`;
+  return `${hours}時間${mins}分`;
+}
+
+export function formatDurationHm(hours: number, minutes: number): string {
+  return formatDurationMinutes(hours * 60 + minutes);
+}
+
+/** HH:MM 形式（法定外労働集計用） */
+export function formatHoursMinutes(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${h}:${String(m).padStart(2, "0")}`;
+}
+
 export function calculateWorkMinutes(punches: AttendancePunch[]): number {
   let total = 0;
   let segmentStart: Date | null = null;
@@ -64,12 +84,7 @@ export function calculateWorkMinutes(punches: AttendancePunch[]): number {
 }
 
 export function formatWorkDuration(minutes: number): string {
-  if (minutes <= 0) return "0分";
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (hours === 0) return `${mins}分`;
-  if (mins === 0) return `${hours}時間`;
-  return `${hours}時間${mins}分`;
+  return formatDurationMinutes(minutes);
 }
 
 /** 月間一覧用（例: 14h5m） */
