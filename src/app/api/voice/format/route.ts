@@ -6,7 +6,7 @@ import { withAnyPermission } from "@/lib/permissions/check";
 export async function POST(request: NextRequest) {
   return withAnyPermission(
     request,
-    ["daily_report_register", "site_survey_register"],
+    ["daily_report_register", "site_survey_register", "project_register"],
     async () => {
       let body: { text?: string; context?: string };
       try {

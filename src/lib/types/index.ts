@@ -53,7 +53,20 @@ export interface Project {
 export interface CustomerOption {
   id: string;
   name: string;
+  address?: string;
 }
+
+export type ParsedProjectEmail = {
+  projectName?: string;
+  customerName?: string;
+  address?: string;
+  clientContactName?: string;
+  clientContactTitle?: string;
+  clientContactPhone?: string;
+  clientContactEmail?: string;
+  projectSummary?: string;
+  workStartDate?: string;
+};
 
 export interface AssignableUser {
   id: string;
@@ -72,6 +85,12 @@ export type CreateProjectInput = {
   name: string;
   customerId: string;
   workStartDate?: string;
+  address?: string;
+  clientContactName?: string;
+  clientContactTitle?: string;
+  clientContactPhone?: string;
+  clientContactEmail?: string;
+  projectSummary?: string;
   assignments: ProjectAssignmentInput[];
 };
 

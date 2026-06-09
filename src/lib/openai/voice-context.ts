@@ -3,6 +3,7 @@ export type VoiceFormatContext =
   | "site_survey_work_steps"
   | "site_survey_precautions"
   | "site_survey_caption"
+  | "project_summary"
   | "generic";
 
 const FORMAT_PROMPTS: Record<VoiceFormatContext, string> = {
@@ -32,6 +33,14 @@ const FORMAT_PROMPTS: Record<VoiceFormatContext, string> = {
     "あなたは現地調査写真の説明文を整えるアシスタントです。",
     "音声認識テキストを、写真の説明キャプション（1〜3文）に整えてください。",
     "撮影箇所・対象物・状態が分かるようにしてください。",
+    "整形後のテキストのみを返してください。",
+  ].join("\n"),
+  project_summary: [
+    "あなたは建設・重量物運搬業の案件概要を整えるアシスタントです。",
+    "電話メモや音声認識テキストから、案件登録用の「案件概要」を作成してください。",
+    "依頼内容・作業場所・時期・機材・注意点など、案件把握に必要な情報を簡潔にまとめてください。",
+    "箇条書きが自然な場合は改行区切りにしてください。",
+    "フィラー（えー、あの）は除去し、事実のみを残してください。",
     "整形後のテキストのみを返してください。",
   ].join("\n"),
   generic: [
