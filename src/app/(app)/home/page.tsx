@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Clock, FileText, Map, MapPin, Receipt } from "lucide-react";
+import { Clock, FileText, FolderPlus, Map, MapPin, Receipt } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { HomeSkeleton } from "@/components/ui/Skeleton";
@@ -45,6 +45,14 @@ const HOME_SHORTCUTS: HomeShortcut[] = [
     icon: FileText,
     color: "bg-brand-50 text-brand-700",
     permissions: ["daily_report_register"],
+  },
+  {
+    href: "/projects/new",
+    label: "新規案件登録",
+    desc: "担当者割り当て",
+    icon: FolderPlus,
+    color: "bg-violet-50 text-violet-700",
+    permissions: ["project_register"],
   },
   {
     href: "/map",

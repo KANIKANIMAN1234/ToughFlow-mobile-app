@@ -26,6 +26,9 @@ import type {
   DailyReportWorkType,
   Expense,
   ExpenseCategory,
+  AssignableUser,
+  CreateProjectInput,
+  CustomerOption,
   Project,
   SiteSurvey,
   SiteSurveyContent,
@@ -1158,4 +1161,87 @@ export async function createAttendancePunch(
 
   if (error) throw new Error(error.message);
   return getAttendanceStatus(tenantId, userId, workDate);
+}
+
+export async function listCustomerOptions(
+  tenantId: string
+): Promise<CustomerOption[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("m_customer")
+    .select("id, name")
+    .eq("tenant_id", tenantId)
+    .order("name");
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+  }));
+}
+
+export async function listAssignableUsers(
+  tenantId: string
+): Promise<AssignableUser[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("m_user")
+    .select("id, name, role")
+    .eq("tenant_id", tenantId)
+    .eq("is_active", true)
+    .eq("role", "field")
+    .order("name");
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    role: row.role as UserRole,
+  }));
+}
+
+export async function createProjectWithAssignments(
+  tenantId: string,
+  input: CreateProjectInput
+): Promise<Project> {
+  if (!input.name.trim()) throw new Error("案件名を入力してください");
+  if (!input.customerId) throw new Error("顧客を選択してください");
+  if (!input.assigneeUserIds.length) {
+    throw new Error("担当者を1名以上選択してください");
+  }
+
+  const supabase = createAdminClient();
+  const workStartDate =
+    input.workStartDate?.trim() || new Date().toISOString().slice(0, 10);
+
+  const { data: project, error } = await supabase
+    .from("m_project")
+    .insert({
+      tenant_id: tenantId,
+      customer_id: input.customerId,
+      name: input.name.trim(),
+      status: "active",
+      work_start_date: workStartDate,
+    })
+    .select("id, tenant_id, name, status, m_customer(name, address)")
+    .single();
+
+  if (error) throw new Error(formatDbError(error.message));
+
+  const assignments = input.assigneeUserIds.map((userId) => ({
+    tenant_id: tenantId,
+    project_id: project.id as string,
+    user_id: userId,
+  }));
+
+  const { error: assignError } = await supabase
+    .from("t_project_assignment")
+    .insert(assignments);
+
+  if (assignError) {
+    await supabase.from("m_project").delete().eq("id", project.id);
+    throw new Error(formatDbError(assignError.message));
+  }
+
+  return mapProject(project as DbProjectRow);
 }

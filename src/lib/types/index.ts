@@ -50,6 +50,24 @@ export interface Project {
   status: "active" | "completed";
 }
 
+export interface CustomerOption {
+  id: string;
+  name: string;
+}
+
+export interface AssignableUser {
+  id: string;
+  name: string;
+  role: UserRole;
+}
+
+export type CreateProjectInput = {
+  name: string;
+  customerId: string;
+  workStartDate?: string;
+  assigneeUserIds: string[];
+};
+
 export interface MachineRow {
   name: string;
   maker: string;
