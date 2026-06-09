@@ -8,9 +8,15 @@ type SubmitPayload = {
   status: SiteSurvey["status"];
 };
 
+type SubmitResult = {
+  survey: SiteSurvey;
+  pdfGenerated?: boolean;
+  pdfWarning?: string;
+};
+
 export async function submitSiteSurvey(
   payload: SubmitPayload
-): Promise<{ survey: SiteSurvey; pdfGenerated?: boolean }> {
+): Promise<SubmitResult> {
   const photoFiles = await collectSiteSurveyPhotoFiles(payload.content);
 
   if (photoFiles.length > 0) {
@@ -28,11 +34,8 @@ export async function submitSiteSurvey(
     if (!res.ok) {
       throw new Error(data.error ?? "登録に失敗しました");
     }
-    return data as { survey: SiteSurvey; pdfGenerated?: boolean };
+    return data as SubmitResult;
   }
 
-  return api.post<{ survey: SiteSurvey; pdfGenerated?: boolean }>(
-    "/api/site-surveys",
-    payload
-  );
+  return api.post<SubmitResult>("/api/site-surveys", payload);
 }

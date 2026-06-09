@@ -109,15 +109,29 @@ export function useSiteSurveyWizard() {
   }
 
   async function handleSubmit(publish: boolean) {
-    if (!user || !selectedProject) return;
+    if (!user) {
+      alert("ログイン情報を取得できません。再ログインしてください。");
+      return;
+    }
+    if (!selectedProject) {
+      alert("案件が選択されていません。担当案件を確認してください。");
+      return;
+    }
     setSubmitting(true);
     try {
-      await submitSiteSurvey({
+      const result = await submitSiteSurvey({
         projectId: selectedProject.id,
         content,
         status: publish ? "published" : "draft",
       });
+      if (publish && result.pdfWarning) {
+        alert(
+          `現地調査は保存しましたが、PDF 生成に失敗しました: ${result.pdfWarning}`
+        );
+      }
       router.push("/site-surveys");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "登録に失敗しました");
     } finally {
       setSubmitting(false);
     }

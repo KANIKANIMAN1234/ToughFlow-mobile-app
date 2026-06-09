@@ -37,13 +37,20 @@ export default function SiteSurveyPreviewPage() {
     if (!user || !state) return;
     setSubmitting(true);
     try {
-      await submitSiteSurvey({
+      const result = await submitSiteSurvey({
         projectId: state.projectId,
         content: state.content,
         status: publish ? "published" : "draft",
       });
+      if (result.pdfGenerated === false && publish && result.pdfWarning) {
+        alert(
+          `現地調査は保存しましたが、PDF 生成に失敗しました: ${result.pdfWarning}`
+        );
+      }
       clearPreviewState();
       router.push("/site-surveys");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "登録に失敗しました");
     } finally {
       setSubmitting(false);
     }

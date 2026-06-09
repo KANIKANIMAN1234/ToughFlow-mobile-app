@@ -21,5 +21,23 @@ export function formatDbError(message: string): string {
     return message;
   }
 
+  if (
+    message.includes("t_site_survey") &&
+    (message.includes("schema cache") || message.includes("does not exist"))
+  ) {
+    return [
+      "データベースに t_site_survey テーブルが見つかりません。",
+      "Supabase SQL Editor で 003 トランザクションテーブル作成 SQL を実行してください。",
+    ].join(" ");
+  }
+
+  if (message.includes("row-level security") || message.includes("RLS")) {
+    return [
+      "データベースの権限設定により保存が拒否されました。",
+      "管理者に Supabase RLS ポリシー（t_site_survey INSERT/SELECT）の確認を依頼してください。",
+      `詳細: ${message}`,
+    ].join(" ");
+  }
+
   return message;
 }

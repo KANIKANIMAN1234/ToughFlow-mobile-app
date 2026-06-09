@@ -943,7 +943,7 @@ export async function listSiteSurveys(
   tenantId: string,
   userId?: string
 ): Promise<SiteSurvey[]> {
-  const supabase = getDbClient();
+  const supabase = createAdminClient();
   let query = supabase
     .from("t_site_survey")
     .select(
@@ -955,7 +955,7 @@ export async function listSiteSurveys(
   if (userId) query = query.eq("user_id", userId);
 
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(formatDbError(error.message));
 
   return (data ?? []).map((row) => parseSiteSurveyRow(row as never));
 }
@@ -964,7 +964,7 @@ export async function getSiteSurvey(
   tenantId: string,
   id: string
 ): Promise<SiteSurvey | null> {
-  const supabase = getDbClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("t_site_survey")
     .select(
@@ -974,7 +974,7 @@ export async function getSiteSurvey(
     .eq("id", id)
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(formatDbError(error.message));
   if (!data) return null;
   return parseSiteSurveyRow(data as never);
 }
@@ -984,7 +984,7 @@ export async function updateSiteSurveyPdfRef(
   surveyId: string,
   pdfRef: string
 ): Promise<void> {
-  const supabase = getDbClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from("t_site_survey")
     .update({ report_pdf_drive_id: pdfRef })
@@ -1004,7 +1004,7 @@ export async function createSiteSurvey(
     driveFileIds?: string[];
   }
 ): Promise<SiteSurvey> {
-  const supabase = getDbClient();
+  const supabase = createAdminClient();
   const publishedAt =
     input.status === "published" ? new Date().toISOString() : undefined;
   const checklist: ChecklistPayload = {
@@ -1024,37 +1024,26 @@ export async function createSiteSurvey(
       shared_to_partner: input.status === "published",
       shared_at: publishedAt ?? null,
     })
-    .select("id, project_id, user_id, checklist, created_at")
+    .select(
+      "id, project_id, user_id, checklist, created_at, m_project(name), m_user(name)"
+    )
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(formatDbError(error.message));
 
-  const [projectName, userName] = await Promise.all([
-    getProjectName(data.project_id),
-    getUserName(data.user_id),
-  ]);
-
-  const { _meta, ...content } = (data.checklist as ChecklistPayload) ?? {};
-
-  const survey: SiteSurvey = {
-    id: data.id,
-    projectId: data.project_id,
-    projectName,
-    userId: data.user_id,
-    userName,
-    status: _meta?.status ?? input.status,
-    content: content as SiteSurveyContent,
-    createdAt: data.created_at,
-    publishedAt: _meta?.publishedAt,
-  };
+  const survey = parseSiteSurveyRow(data as never);
 
   if (input.status === "published") {
-    await createDispatchDraftFromSurvey(
-      tenantId,
-      survey.id,
-      input.projectId,
-      input.content
-    );
+    try {
+      await createDispatchDraftFromSurvey(
+        tenantId,
+        survey.id,
+        input.projectId,
+        input.content
+      );
+    } catch (e) {
+      console.error("[site-survey] dispatch draft failed:", e);
+    }
   }
 
   return survey;
@@ -1072,7 +1061,7 @@ async function createDispatchDraftFromSurvey(
   const today = new Date().toISOString().slice(0, 10);
   if (workDate <= today) return;
 
-  const supabase = getDbClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("t_dispatch").insert({
     tenant_id: tenantId,
     dispatch_date: workDate,
